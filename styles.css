@@ -374,6 +374,34 @@ main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 22px 20
 
 .part-play:hover { background: #0b4a38; }
 
+.verse-tick {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: #cbd5e1;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.verse-tick:hover { border-color: var(--green); color: var(--green); }
+
+.verse-tick.on { background: var(--green); border-color: var(--green); color: #fff; }
+
+.verse.memorised { border-left: 3px solid var(--green); background: #f6faf7; }
+
+.meta-ticked { color: var(--green); font-weight: 700; }
+
+.verse-progress { color: var(--green); }
+
+.part-verse-count { color: var(--green); font-weight: 600; }
+
 /* ---------- verses ---------- */
 
 .verse {
@@ -582,6 +610,7 @@ body.show-words .verse-words { display: block; }
   .verse-top { gap: 8px; }
   .verse-ref { font-size: 10.5px; padding: 2px 6px; }
   .verse-play { width: 28px; height: 28px; font-size: 11px; }
+  .verse-tick { width: 24px; height: 24px; font-size: 11px; border-width: 1.5px; }
   .verse-ar { font-size: 25px; line-height: 1.95; }
   .verse-en { font-size: 14px; }
   .verse-words { font-size: 11.5px; }

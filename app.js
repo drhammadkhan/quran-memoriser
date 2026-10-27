@@ -86,6 +86,33 @@
       this.write(ch, m);
       return !!m[idx];
     },
+    set(ch, idx, on) {
+      const m = this.read(ch);
+      if (on) m[idx] = true; else delete m[idx];
+      this.write(ch, m);
+      return on;
+    },
+  };
+
+  // Per-verse memorisation ticks, e.g. { "2": { "1": true } }
+  const verseStore = {
+    key: "qm.verses.v1",
+    read(ch) {
+      try { return (JSON.parse(localStorage.getItem(this.key)) || {})[ch] || {}; } catch { return {}; }
+    },
+    write(ch, m) {
+      let all = {};
+      try { all = JSON.parse(localStorage.getItem(this.key)) || {}; } catch {}
+      if (Object.keys(m).length) all[ch] = m; else delete all[ch];
+      localStorage.setItem(this.key, JSON.stringify(all));
+    },
+    get(ch, v) { return !!this.read(ch)[v]; },
+    set(ch, v, on) {
+      const m = this.read(ch);
+      if (on) m[v] = true; else delete m[v];
+      this.write(ch, m);
+    },
+    count(ch) { return Object.keys(this.read(ch)).length; },
   };
 
   // Split a surah into memorisation parts: ~150 Arabic words each (about half a
@@ -323,6 +350,20 @@
   const audioUrl = (ch, v, reciter) => `${AUDIO_BASE}${reciter}/${pad3(ch)}-${pad3(v)}-AR.mp3`;
   const statusInfo = (id) => STATUSES.find((s) => s.id === id) || STATUSES[0];
 
+  // Refresh every on-screen status control for a chapter (grid card + chapter header)
+  // after its status changed programmatically.
+  function syncStatusButtons(ch) {
+    const st = statusStore.get(ch);
+    const info = statusInfo(st);
+    document.querySelectorAll(`.card[data-ch="${ch}"] .status-btn, .chapter-head[data-ch="${ch}"] .status-btn`)
+      .forEach((b) => {
+        b.dataset.status = st;
+        b.innerHTML = `<span class="dot"></span>${esc(info.label)}`;
+      });
+    document.querySelectorAll(`.card[data-ch="${ch}"]`).forEach((c) => (c.dataset.status = st));
+    renderChips();
+  }
+
   // ---------- audio ----------
   function detachAudio() {
     if (player.objectUrl) {
@@ -506,6 +547,7 @@
       return;
     }
     for (const s of visible) {
+      const ticked = verseStore.count(s.ch);
       const card = el("div", "card");
       card.dataset.ch = s.ch;
       card.dataset.status = map[s.ch] || "";
@@ -518,7 +560,7 @@
         </div>
         <div>
           <div class="surah-name">${esc(s.name)}</div>
-          <div class="surah-meta">${s.verses} verses</div>
+          <div class="surah-meta">${s.verses} verses${ticked ? ` · <span class="meta-ticked">${ticked}✓</span>` : ""}</div>
         </div>`;
       card.append(statusButton(s.ch));
       const open = () => { location.hash = `#/ch/${s.ch}`; };
@@ -563,15 +605,24 @@
     view.append(crumb);
 
     const head = el("div", "chapter-head");
+    head.dataset.ch = ch;
     const titleRow = el("div", "chapter-title-row");
     const title = el("div", "chapter-title",
       `<span class="en">${ch}. ${esc(meta.name)}</span><span class="ar">${esc(meta.ar)}</span>`);
     const statusCol = el("div");
     statusCol.append(statusButton(ch));
     titleRow.append(title, statusCol);
-    head.append(
-      titleRow,
-      el("div", "chapter-meta", `${meta.verses} verses · alislam.org numbering (verse 1 is the Bismillah where applicable)`));
+
+    const totalVerses = data.verses.length;
+    const chapterMetaEl = el("div", "chapter-meta", "");
+    const refreshChapterMeta = () => {
+      const done = verseStore.count(ch);
+      chapterMetaEl.innerHTML =
+        `${meta.verses} verses · alislam.org numbering (verse 1 is the Bismillah where applicable)` +
+        (done > 0 ? ` · <b class="verse-progress">${done}/${totalVerses} verses memorised</b>` : "");
+    };
+    refreshChapterMeta();
+    head.append(titleRow, chapterMetaEl);
 
     const controls = el("div", "controls");
 
@@ -614,19 +665,25 @@
     head.append(controls);
 
     // Memorisation parts (long surahs only): a strip of chips plus a tick per part.
+    // Display state always derives from verse ticks so parts and verses agree.
     const parts = computeParts(data.verses);
-    const partDone = partStore.read(ch);
+    const partVerseCount = (p) => p.end - p.start + 1;
+    const partComplete = (p) => {
+      const m = verseStore.read(ch);
+      for (let i = p.start; i <= p.end; i++) if (!m[data.verses[i].n]) return false;
+      return true;
+    };
     let strip = null;
     let partProgress = null;
     if (parts.length) {
       const stripWrap = el("div", "parts-wrap");
-      const doneCount = parts.filter((p) => partDone[p.i]).length;
+      const doneCount = parts.filter((p) => partComplete(p)).length;
       partProgress = el("div", "parts-progress",
         `Memorisation parts: <b>${doneCount}/${parts.length}</b> done · ~${PART_TARGET_WORDS} words each`);
       strip = el("div", "parts-strip");
       for (const p of parts) {
-        const chip = el("button", "part-chip" + (partDone[p.i] ? " done" : ""),
-          `${partDone[p.i] ? "✓ " : ""}${p.from}–${p.to}`);
+        const chip = el("button", "part-chip" + (partComplete(p) ? " done" : ""),
+          `${partComplete(p) ? "✓ " : ""}${p.from}–${p.to}`);
         chip.title = `Part ${p.i + 1}: verses ${ch}:${p.from}–${p.to} · ${p.words} words`;
         chip.dataset.part = p.i;
         chip.addEventListener("click", () => {
@@ -643,31 +700,90 @@
     const headerAt = {};
     for (const p of parts) headerAt[p.start] = p;
 
+    // ---- verse/part/chapter roll-up machinery ----
+    const partOfVerse = {};
+    for (const p of parts) {
+      for (let i = p.start; i <= p.end; i++) partOfVerse[data.verses[i].n] = p;
+    }
+    const setVerseRowUi = (row, on) => {
+      row.classList.toggle("memorised", on);
+      const t = row.querySelector(".verse-tick");
+      if (t) {
+        t.classList.toggle("on", on);
+        t.title = on ? "Memorised — click to clear" : "Mark this verse memorised";
+      }
+    };
+    const refreshPartUi = (p) => {
+      const done = data.verses.slice(p.start, p.end + 1).filter((v) => verseStore.get(ch, v.n)).length;
+      const on = done === partVerseCount(p);
+      partStore.set(ch, p.i, on);
+      const ph = view.querySelector(`.part-header[data-part="${p.i}"]`);
+      if (ph) {
+        const tickBtn = ph.querySelector(".part-tick");
+        tickBtn.classList.toggle("on", on);
+        tickBtn.textContent = on ? "✓ Memorised" : "Mark memorised";
+        const countEl = ph.querySelector(".part-verse-count");
+        if (countEl) countEl.textContent = `${done}/${partVerseCount(p)} verses ✓`;
+      }
+      if (strip) {
+        const chip = strip.querySelector(`.part-chip[data-part="${p.i}"]`);
+        if (chip) {
+          chip.classList.toggle("done", on);
+          chip.textContent = `${on ? "✓ " : ""}${p.from}–${p.to}`;
+        }
+      }
+      if (partProgress) {
+        const fresh = partStore.read(ch);
+        const dn = parts.filter((q) => fresh[q.i]).length;
+        partProgress.innerHTML = `Memorisation parts: <b>${dn}/${parts.length}</b> done · ~${PART_TARGET_WORDS} words each`;
+      }
+    };
+    const applyChapterRollup = () => {
+      const done = verseStore.count(ch);
+      const cur = statusStore.get(ch);
+      if (done === totalVerses) {
+        if (cur !== "done") statusStore.set(ch, "done");
+      } else if (cur === "done") {
+        statusStore.set(ch, "partial");
+      }
+      syncStatusButtons(ch);
+      refreshChapterMeta();
+    };
+    const toggleVerseMemorised = (v, row) => {
+      const on = !verseStore.get(ch, v.n);
+      verseStore.set(ch, v.n, on);
+      setVerseRowUi(row, on);
+      const p = partOfVerse[v.n];
+      if (p) refreshPartUi(p);
+      applyChapterRollup();
+    };
+
     for (let idx = 0; idx < data.verses.length; idx++) {
       const v = data.verses[idx];
       const p = headerAt[idx];
       if (p) {
         const ph = el("div", "part-header");
         ph.dataset.part = p.i;
+        const initialDone = data.verses.slice(p.start, p.end + 1).filter((q) => verseStore.get(ch, q.n)).length;
         const label = el("div", "part-label",
           `<span class="part-no">Part ${p.i + 1} of ${parts.length}</span>
            <span class="part-range">verses ${ch}:${p.from}–${p.to}</span>
-           <span class="part-words">${p.words} words</span>`);
+           <span class="part-words">${p.words} words</span>
+           <span class="part-verse-count part-words">${initialDone}/${partVerseCount(p)} verses ✓</span>`);
         const actions = el("div", "part-actions");
-        const tick = el("button", "part-tick" + (partDone[p.i] ? " on" : ""),
-          partDone[p.i] ? "✓ Memorised" : "Mark memorised");
+        const tick = el("button", "part-tick" + (partComplete(p) ? " on" : ""),
+          partComplete(p) ? "✓ Memorised" : "Mark memorised");
         tick.addEventListener("click", () => {
-          const on = partStore.toggle(ch, p.i);
-          tick.classList.toggle("on", on);
-          tick.textContent = on ? "✓ Memorised" : "Mark memorised";
-          const chip = strip.querySelector(`.part-chip[data-part="${p.i}"]`);
-          if (chip) {
-            chip.classList.toggle("done", on);
-            chip.textContent = `${on ? "✓ " : ""}${p.from}–${p.to}`;
+          // ticking a part ticks every verse inside it (and vice versa)
+          const targetOn = !partComplete(p);
+          for (let i = p.start; i <= p.end; i++) {
+            const vv = data.verses[i];
+            verseStore.set(ch, vv.n, targetOn);
+            const r = view.querySelector(`.verse[data-v="${vv.n}"]`);
+            if (r) setVerseRowUi(r, targetOn);
           }
-          const fresh = partStore.read(ch);
-          const done = parts.filter((q) => fresh[q.i]).length;
-          partProgress.innerHTML = `Memorisation parts: <b>${done}/${parts.length}</b> done · ~${PART_TARGET_WORDS} words each`;
+          refreshPartUi(p);
+          applyChapterRollup();
         });
         const playPart = el("button", "part-play", "▶ Play part");
         playPart.addEventListener("click", () => {
@@ -685,8 +801,13 @@
       const row = el("div", "verse");
       row.dataset.v = v.n;
       row.dataset.ch = ch;
+      if (verseStore.get(ch, v.n)) row.classList.add("memorised");
 
       const top = el("div", "verse-top");
+      const tickBtn = el("button", "verse-tick" + (verseStore.get(ch, v.n) ? " on" : ""), "✓");
+      tickBtn.title = verseStore.get(ch, v.n) ? "Memorised — click to clear" : "Mark this verse memorised";
+      tickBtn.addEventListener("click", () => toggleVerseMemorised(v, row));
+
       const play = el("button", "verse-play", "▶");
       play.title = `Play ${ch}:${v.n}`;
       play.addEventListener("click", () => {
@@ -699,7 +820,7 @@
         const clear = () => play.classList.remove("loading");
         if (player.audio) { player.audio.addEventListener("playing", clear, { once: true }); player.audio.addEventListener("error", clear, { once: true }); }
       });
-      top.append(play, el("span", "verse-ref", `${ch}:${v.n}`));
+      top.append(play, tickBtn, el("span", "verse-ref", `${ch}:${v.n}`));
       row.append(top);
 
       row.append(el("div", "verse-ar", esc(v.ar)));
