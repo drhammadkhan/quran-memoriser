@@ -512,7 +512,7 @@
   }
 
   // ---------- views ----------
-  function renderGrid() {
+  function renderGrid(restoreScrollY) {
     stopPlayback();
     const view = document.getElementById("view");
     view.innerHTML = "";
@@ -570,6 +570,8 @@
     }
     view.append(grid);
     renderChips();
+    // returning from a chapter restores where you were; fresh views start at the top
+    window.scrollTo({ top: typeof restoreScrollY === "number" ? restoreScrollY : 0, behavior: "instant" });
   }
 
   async function renderChapter(ch) {
@@ -829,14 +831,32 @@
       if (words.length) row.append(el("div", "verse-words", esc(words.join(" · "))));
       view.append(row);
     }
+    // re-entering a chapter returns to where you left it
+    window.scrollTo({ top: chapterScrollY[ch] || 0, behavior: "instant" });
     renderChips();
   }
 
   // ---------- router ----------
+  let gridScrollY = 0;          // grid scroll to restore when returning from a chapter
+  let chapterScrollY = {};      // per-chapter scroll to restore when re-entering
+  let viewIsGrid = true;
+  let currentChapter = null;
+
   function route() {
     const m = location.hash.match(/^#\/ch\/(\d+)$/);
-    if (m) renderChapter(parseInt(m[1], 10));
-    else renderGrid();
+    if (m) {
+      if (viewIsGrid) gridScrollY = window.scrollY;
+      else if (currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
+      viewIsGrid = false;
+      currentChapter = parseInt(m[1], 10);
+      renderChapter(currentChapter);
+    } else {
+      if (!viewIsGrid && currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
+      const y = viewIsGrid ? undefined : gridScrollY;
+      viewIsGrid = true;
+      currentChapter = null;
+      renderGrid(y);
+    }
   }
 
   window.addEventListener("hashchange", route);
