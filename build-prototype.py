@@ -280,7 +280,240 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .v4-ven { font-size: 14px; color: #3c3c39; line-height: 1.5; }
 .v4-verse.playing .v4-var { box-shadow: inset 0 -2px 0 #a62c37; }
 
-/* entrance motion — one per mount, sub-300ms, ease-out, reduced-motion safe */
+/* ============ V5 INK WASH — monochrome severity (Wada colours: White / Black / Pompeian Red) ============ */
+.v5 { background: #ffffff; color: #14140f; padding-bottom: 80px; }
+.v5-serif { font-family: Georgia, "Times New Roman", serif; }
+.v5-top { background: #ffffff; border-bottom: 1px solid #e8e8e4; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v5-brand { font-size: 22px; font-weight: 700; letter-spacing: 0.3px; }
+.v5-brand .mark { color: #ab2439; margin-right: 9px; }
+.v5-sub { font-size: 11px; color: #9a9a93; letter-spacing: 1.6px; text-transform: uppercase; margin-top: 3px; }
+.v5-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.v5-chip { font-size: 11.5px; letter-spacing: 0.8px; text-transform: uppercase; color: #6d6d66; }
+.v5-chip .dot { display: inline-block; width: 7px; height: 7px; border-radius: 0; margin-right: 5px; vertical-align: 1px; }
+.v5-main { max-width: 1060px; margin: 0 auto; padding: 28px 24px; }
+.v5-filters { display: flex; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.v5-filter { border: none; border-bottom: 1px solid #d8d8d2; background: transparent; padding: 2px 1px 5px; font-size: 12.5px; color: #9a9a93; cursor: pointer; letter-spacing: 0.6px; }
+.v5-filter[data-active] { color: #14140f; border-bottom-color: #ab2439; }
+.v5-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(226px, 1fr)); gap: 0; border-top: 1px solid #e8e8e4; }
+.v5-card { border-bottom: 1px solid #e8e8e4; border-right: 1px solid #e8e8e4; padding: 16px 18px 13px; cursor: pointer; }
+.v5-card-top { display: flex; justify-content: space-between; align-items: baseline; }
+.v5-num { font-size: 12px; color: #ab2439; font-variant-numeric: tabular-nums; }
+.v5-cardar { font-size: 21px; color: #14140f; }
+.v5-name { font-size: 17px; margin-top: 8px; }
+.v5-meta { font-size: 11.5px; color: #9a9a93; margin-top: 3px; letter-spacing: 0.5px; }
+.v5-meta .tick { color: #437742; font-weight: 700; }
+.v5-pill { margin-top: 10px; border: none; background: transparent; padding: 0; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #9a9a93; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+.v5-pill .sq { width: 8px; height: 8px; border-radius: 0; display: inline-block; background: #d8d8d2; }
+.v5-pill[data-status=done] { color: #14140f; } .v5-pill[data-status=done] .sq { background: #437742; }
+.v5-pill[data-status=next] { color: #14140f; } .v5-pill[data-status=next] .sq { background: #c96f2a; }
+.v5-pill[data-status=partial] { color: #14140f; } .v5-pill[data-status=partial] .sq { background: #d98a9d; }
+.v5-pill[data-status=later] { color: #14140f; } .v5-pill[data-status=later] .sq { background: #5a82b3; }
+.v5-sec { margin-top: 52px; }
+.v5-crumb { color: #9a9a93; font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; text-decoration: none; }
+.v5-chhead { border-top: 2px solid #14140f; padding: 16px 2px 0; }
+.v5-chtitle { font-size: 26px; }
+.v5-chtitle .ar { font-size: 30px; margin-left: 14px; }
+.v5-chmeta { font-size: 12px; color: #9a9a93; margin-top: 6px; letter-spacing: 0.5px; }
+.v5-chmeta b { color: #437742; }
+.v5-controls { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.v5-btn { border: 1px solid #14140f; background: transparent; color: #14140f; border-radius: 0; padding: 7px 16px; font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.v5-btn.f { background: #14140f; color: #fff; }
+.v5-part { margin: 26px 0 4px; padding: 8px 0 6px; border-top: 1px solid #14140f; border-bottom: 1px solid #e8e8e4; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v5-part .no { font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; }
+.v5-part .no b { color: #ab2439; }
+.v5-part .range, .v5-part .cnt { font-size: 11.5px; color: #6d6d66; margin-left: 12px; letter-spacing: 0.5px; }
+.v5-part .cnt { color: #437742; font-weight: 700; }
+.v5-partbtns { display: flex; gap: 10px; }
+.v5-ptick { border: none; border-bottom: 1px solid #437742; background: transparent; color: #437742; padding: 2px 1px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.v5-ptick[data-on] { color: #437742; font-weight: 700; }
+.v5-pplay { border: none; border-bottom: 1px solid #ab2439; background: transparent; color: #ab2439; padding: 2px 1px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.v5-verse { padding: 18px 2px 16px; border-bottom: 1px solid #ecece8; }
+.v5-verse.mem .v5-vref { color: #437742; }
+.v5-vtop { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.v5-vplay { width: 30px; height: 30px; border-radius: 0; border: 1px solid #d8d8d2; background: transparent; color: #6d6d66; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v5-vtick { width: 30px; height: 30px; border-radius: 0; border: 1px solid #d8d8d2; background: transparent; color: #d8d8d2; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v5-vtick[data-on] { background: #437742; border-color: #437742; color: #fff; }
+.v5-vref { font-size: 11px; letter-spacing: 2px; color: #ab2439; text-transform: uppercase; }
+.v5-var { font-size: 31px; line-height: 2.15; text-align: right; margin: 4px 0; color: #14140f; }
+.v5-ven { font-size: 14.5px; color: #44443d; line-height: 1.6; font-style: italic; }
+.v5-verse.playing .v5-var { box-shadow: inset 0 -3px 0 #ab2439; }
+
+/* ============ V6 KINPAKU — illuminated parchment (Wada #323: Cinnamon Buff / Citron Yellow / Madder Brown / Black) ============ */
+.v6 { background: #f6ecd8; color: #3a2a18; padding-bottom: 80px; }
+.v6-top { background: linear-gradient(180deg, #f9f1e0, #f4e8cf); border-bottom: 1px solid #e2d3ae; padding: 15px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v6-brand { font-size: 20px; font-weight: 700; color: #5c3a1e; }
+.v6-brand .mark { color: #b8791f; margin-right: 8px; }
+.v6-sub { font-size: 11.5px; color: #9a8560; margin-top: 2px; }
+.v6-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v6-chip { background: rgba(253, 197, 126, 0.22); border: 1px solid #e0cd9e; border-radius: 3px; padding: 4px 10px; font-size: 11.5px; color: #7c6740; }
+.v6-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 0; margin-right: 5px; vertical-align: 0; }
+.v6-main { max-width: 1060px; margin: 0 auto; padding: 26px 22px; }
+.v6-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.v6-filter { border: 1px solid #ddcaa2; background: transparent; color: #7c6740; border-radius: 3px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+.v6-filter[data-active] { background: #762c19; color: #f6ecd8; border-color: #762c19; }
+.v6-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 12px; }
+.v6-card { background: #fbf4e4; border: 1px solid #e2d3ae; border-top: 3px solid #d9b96a; border-radius: 4px; padding: 14px 15px 12px; cursor: pointer; }
+.v6-card[data-status=done] { border-top-color: #6b7a2e; }
+.v6-card[data-status=next] { border-top-color: #a44a2a; }
+.v6-card[data-status=partial] { border-top-color: #c98a94; }
+.v6-card[data-status=later] { border-top-color: #6a7f9e; }
+.v6-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v6-num { width: 26px; height: 26px; border-radius: 0; background: #762c19; color: #f6ecd8; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.v6-cardar { font-size: 20px; color: #5c3a1e; }
+.v6-name { font-size: 16.5px; font-weight: 700; margin-top: 7px; }
+.v6-meta { font-size: 11.5px; color: #9a8560; margin-top: 2px; }
+.v6-meta .tick { color: #6b7a2e; font-weight: 700; }
+.v6-pill { margin-top: 9px; border: 1px solid #d9c493; background: transparent; border-radius: 2px; padding: 3px 9px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #7c6740; cursor: pointer; font-family: inherit; }
+.v6-pill[data-status=done] { color: #55631f; border-color: #6b7a2e; }
+.v6-pill[data-status=next] { color: #8a3c1e; border-color: #a44a2a; }
+.v6-pill[data-status=partial] { color: #a05a66; border-color: #c98a94; }
+.v6-pill[data-status=later] { color: #46608a; border-color: #6a7f9e; }
+.v6-sec { margin-top: 44px; }
+.v6-crumb { color: #9a8560; font-size: 12.5px; text-decoration: none; }
+.v6-chhead { background: #fbf4e4; border: 1px solid #e2d3ae; border-radius: 4px; padding: 18px 20px; box-shadow: 0 1px 0 #e2d3ae inset; }
+.v6-chtitle { font-size: 23px; color: #5c3a1e; }
+.v6-chtitle .ar { font-size: 28px; color: #762c19; margin-left: 12px; }
+.v6-chmeta { font-size: 12px; color: #9a8560; margin-top: 4px; }
+.v6-chmeta b { color: #55631f; }
+.v6-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v6-btn { border: 1px solid #762c19; background: #762c19; color: #f6ecd8; border-radius: 3px; padding: 8px 15px; font-size: 12.5px; letter-spacing: 0.6px; cursor: pointer; font-family: inherit; }
+.v6-btn.o { background: transparent; color: #5c3a1e; }
+.v6-part { margin: 20px 0 12px; padding: 10px 16px; background: linear-gradient(90deg, #f3dfae, #f7e8c4); border: 1px solid #ddc488; border-radius: 3px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v6-part .no { font-weight: 800; color: #762c19; }
+.v6-part .range { font-size: 12px; color: #7c6740; margin-left: 10px; }
+.v6-part .cnt { font-size: 12px; color: #55631f; font-weight: 700; margin-left: 10px; }
+.v6-partbtns { display: flex; gap: 7px; }
+.v6-ptick { border: 1px solid #6b7a2e; color: #55631f; background: transparent; border-radius: 2px; padding: 4px 10px; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.v6-ptick[data-on] { background: #6b7a2e; color: #f6ecd8; }
+.v6-pplay { border: 1px solid #762c19; color: #762c19; background: transparent; border-radius: 2px; padding: 4px 10px; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.v6-verse { background: #fbf4e4; border: 1px solid #e7d9b8; border-radius: 4px; padding: 15px 18px; margin-bottom: 10px; }
+.v6-verse.mem { border-left: 3px solid #6b7a2e; }
+.v6-vtop { display: flex; align-items: center; gap: 9px; }
+.v6-vplay { width: 30px; height: 30px; border-radius: 2px; border: 1px solid #d9c493; background: transparent; color: #762c19; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v6-vtick { width: 30px; height: 30px; border-radius: 2px; border: 1px solid #d9c493; background: transparent; color: #cdbb92; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v6-vtick[data-on] { background: #6b7a2e; border-color: #6b7a2e; color: #f6ecd8; }
+.v6-vref { font-size: 11px; letter-spacing: 1.4px; color: #b8791f; text-transform: uppercase; }
+.v6-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 6px 0 2px; color: #33230f; }
+.v6-ven { font-size: 15px; color: #5e4a2c; line-height: 1.55; }
+.v6-verse.playing { box-shadow: 0 0 0 2px #b8791f; }
+
+/* ============ V7 ONSEN — cushioned softness (Wada #128: Corinthian Pink / Venice Green / Light Mauve) ============ */
+.v7 { background: #fbf2f2; color: #43343a; padding-bottom: 80px; }
+.v7-top { background: #fffafc; border-bottom: 1px solid #f2e0e2; padding: 15px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v7-brand { font-size: 20px; font-weight: 800; color: #43343a; }
+.v7-brand .mark { color: #d98a94; margin-right: 8px; }
+.v7-sub { font-size: 11.5px; color: #a38e94; margin-top: 2px; }
+.v7-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v7-chip { background: #fff; border: 1px solid #f2e0e2; border-radius: 999px; padding: 5px 12px; font-size: 12px; color: #7d6a70; box-shadow: 0 1px 3px rgba(120, 80, 90, 0.06); }
+.v7-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.v7-main { max-width: 1060px; margin: 0 auto; padding: 26px 22px; }
+.v7-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.v7-filter { border: none; background: #fff; color: #a38e94; border-radius: 999px; padding: 6px 15px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 1px 4px rgba(120, 80, 90, 0.08); }
+.v7-filter[data-active] { background: #2e9a8f; color: #fff; }
+.v7-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 14px; }
+.v7-card { background: #fff; border: 1px solid #f2e0e2; border-radius: 22px; padding: 16px 17px 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(120, 80, 90, 0.06); border-left: 6px solid #efe3e5; }
+.v7-card[data-status=done] { border-left-color: #2e9a8f; }
+.v7-card[data-status=next] { border-left-color: #e0896c; }
+.v7-card[data-status=partial] { border-left-color: #e39aa4; }
+.v7-card[data-status=later] { border-left-color: #8a86c9; }
+.v7-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v7-num { width: 28px; height: 28px; border-radius: 50%; background: #fdf0f1; color: #b06a75; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.v7-cardar { font-size: 20px; color: #2e9a8f; }
+.v7-name { font-size: 16.5px; font-weight: 700; margin-top: 7px; }
+.v7-meta { font-size: 11.5px; color: #a38e94; margin-top: 2px; }
+.v7-meta .tick { color: #2e9a8f; font-weight: 700; }
+.v7-pill { margin-top: 10px; border: none; background: #fdf0f1; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; color: #7d6a70; cursor: pointer; font-family: inherit; }
+.v7-pill[data-status=done] { background: #d9f0ed; color: #1f7a70; }
+.v7-pill[data-status=next] { background: #fbe4d8; color: #b05a2e; }
+.v7-pill[data-status=partial] { background: #fbdfe3; color: #a55563; }
+.v7-pill[data-status=later] { background: #e4e3f5; color: #5d5aa0; }
+.v7-sec { margin-top: 44px; }
+.v7-crumb { color: #a38e94; font-size: 13px; text-decoration: none; font-weight: 600; }
+.v7-chhead { background: #fff; border: 1px solid #f2e0e2; border-radius: 24px; padding: 19px 21px; box-shadow: 0 2px 12px rgba(120, 80, 90, 0.07); }
+.v7-chtitle { font-size: 23px; }
+.v7-chtitle .ar { font-size: 27px; color: #2e9a8f; margin-left: 12px; }
+.v7-chmeta { font-size: 12.5px; color: #a38e94; margin-top: 4px; }
+.v7-chmeta b { color: #1f7a70; }
+.v7-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v7-btn { border: none; background: #2e9a8f; color: #fff; border-radius: 999px; padding: 9px 17px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 3px 10px rgba(46, 154, 143, 0.25); }
+.v7-btn.o { background: #fdf0f1; color: #7d6a70; box-shadow: none; }
+.v7-part { margin: 20px 0 12px; padding: 11px 17px; background: #e8f4f2; border-radius: 18px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v7-part .no { font-weight: 800; color: #1f7a70; }
+.v7-part .range { font-size: 12px; color: #6f8a86; margin-left: 10px; }
+.v7-part .cnt { font-size: 12px; color: #1f7a70; font-weight: 800; margin-left: 10px; }
+.v7-partbtns { display: flex; gap: 7px; }
+.v7-ptick { border: none; background: #fff; color: #1f7a70; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.v7-ptick[data-on] { background: #2e9a8f; color: #fff; }
+.v7-pplay { border: none; background: #43343a; color: #fff; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.v7-verse { background: #fff; border: 1px solid #f2e0e2; border-radius: 20px; padding: 16px 19px; margin-bottom: 11px; }
+.v7-verse.mem { background: #f0f9f7; border-color: #cbe8e4; }
+.v7-vtop { display: flex; align-items: center; gap: 9px; }
+.v7-vplay { width: 31px; height: 31px; border-radius: 50%; border: none; background: #e8f4f2; color: #1f7a70; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v7-vtick { width: 31px; height: 31px; border-radius: 50%; border: none; background: #fdf0f1; color: #d9b8bd; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v7-vtick[data-on] { background: #2e9a8f; color: #fff; }
+.v7-vref { font-size: 11px; letter-spacing: 1px; color: #b39aa0; font-weight: 700; }
+.v7-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 7px 0 2px; color: #3c2f34; }
+.v7-ven { font-size: 15px; color: #6d5a60; line-height: 1.55; }
+.v7-verse.playing { box-shadow: 0 0 0 3px #e39aa4; }
+
+/* ============ V8 TANZAKU — strip rhythm (Wada #30: Pompeian Red / Mineral Gray) ============ */
+.v8 { background: #fafbfb; color: #22262a; padding-bottom: 80px; }
+.v8-top { background: #fafbfb; border-bottom: 2px solid #22262a; padding: 13px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v8-brand { font-size: 17px; font-weight: 800; letter-spacing: 0.6px; }
+.v8-brand .mark { color: #ab2439; }
+.v8-sub { font-size: 10.5px; color: #8b98a0; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+.v8-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.v8-chip { font-size: 11px; color: #5c6a72; border-left: 2px solid #a2b0ad; padding-left: 7px; letter-spacing: 0.8px; text-transform: uppercase; }
+.v8-main { max-width: 920px; margin: 0 auto; padding: 26px 24px; }
+.v8-filters { display: flex; gap: 0; margin-bottom: 16px; }
+.v8-filter { border: none; background: transparent; padding: 6px 13px; font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: #8b98a0; cursor: pointer; font-family: inherit; }
+.v8-filter[data-active] { color: #ab2439; font-weight: 800; }
+.v8-list { border-left: 2px solid #22262a; }
+.v8-row { display: flex; align-items: center; gap: 14px; padding: 11px 4px 11px 18px; cursor: pointer; border-bottom: 1px solid #e7ebed; position: relative; }
+.v8-row::before { content: ""; position: absolute; left: -2px; top: 0; bottom: 0; width: 2px; background: transparent; }
+.v8-row[data-status=done]::before { background: #3f7d4e; }
+.v8-row[data-status=next]::before { background: #c96f2a; }
+.v8-row[data-status=partial]::before { background: #d5648a; }
+.v8-row[data-status=later]::before { background: #4a6fa5; }
+.v8-rnum { font-size: 11px; color: #a2b0ad; font-variant-numeric: tabular-nums; width: 24px; flex-shrink: 0; }
+.v8-rname { font-size: 14px; font-weight: 600; flex-shrink: 0; }
+.v8-rar { font-size: 26px; color: #22262a; flex: 1; text-align: right; line-height: 1.4; }
+.v8-rmeta { font-size: 11px; color: #8b98a0; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.v8-rmeta .tick { color: #3f7d4e; font-weight: 700; }
+.v8-rpill { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; padding: 2px 8px; border: none; border-radius: 0; background: transparent; color: #8b98a0; cursor: pointer; font-family: inherit; font-weight: 700; border-left: 2px solid #a2b0ad; }
+.v8-rpill[data-status=done] { color: #3f7d4e; border-left-color: #3f7d4e; }
+.v8-rpill[data-status=next] { color: #c96f2a; border-left-color: #c96f2a; }
+.v8-rpill[data-status=partial] { color: #d5648a; border-left-color: #d5648a; }
+.v8-rpill[data-status=later] { color: #4a6fa5; border-left-color: #4a6fa5; }
+.v8-sec { margin-top: 46px; }
+.v8-crumb { color: #8b98a0; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; }
+.v8-chhead { border-left: 2px solid #22262a; padding: 4px 0 4px 22px; }
+.v8-chtitle { font-size: 25px; font-weight: 800; }
+.v8-chtitle .ar { font-size: 30px; color: #ab2439; margin-left: 12px; }
+.v8-chmeta { font-size: 12px; color: #5c6a72; margin-top: 5px; font-variant-numeric: tabular-nums; }
+.v8-chmeta b { color: #3f7d4e; }
+.v8-controls { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.v8-btn { border: none; background: transparent; color: #ab2439; border-bottom: 2px solid #ab2439; padding: 3px 2px; font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; cursor: pointer; font-family: inherit; font-weight: 800; }
+.v8-btn.g { color: #22262a; border-bottom-color: #22262a; }
+.v8-part { margin: 24px 0 6px; padding: 7px 0 5px; border-top: 1px solid #22262a; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v8-part .no { font-size: 11px; letter-spacing: 2.2px; text-transform: uppercase; font-weight: 800; color: #ab2439; }
+.v8-part .range { font-size: 11.5px; color: #5c6a72; margin-left: 12px; font-variant-numeric: tabular-nums; }
+.v8-part .cnt { font-size: 11.5px; color: #3f7d4e; font-weight: 800; margin-left: 12px; }
+.v8-partbtns { display: flex; gap: 12px; }
+.v8-ptick { border: none; background: transparent; color: #3f7d4e; padding: 2px 1px; font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; cursor: pointer; font-family: inherit; border-bottom: 1px solid #3f7d4e; font-weight: 700; }
+.v8-ptick[data-on] { font-weight: 800; }
+.v8-pplay { border: none; background: transparent; color: #ab2439; padding: 2px 1px; font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; cursor: pointer; font-family: inherit; border-bottom: 1px solid #ab2439; font-weight: 700; }
+.v8-verse { display: flex; gap: 18px; padding: 16px 0 14px; border-bottom: 1px solid #e7ebed; align-items: flex-start; }
+.v8-verse.mem .v8-vtick { background: #3f7d4e; color: #fff; border-color: #3f7d4e; }
+.v8-verse.mem .v8-bignum { color: #3f7d4e; }
+.v8-vtools { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; padding-top: 6px; }
+.v8-vplay { width: 28px; height: 28px; border-radius: 0; border: 1px solid #c9d4da; background: transparent; color: #5c6a72; cursor: pointer; font-size: 11px; font-family: inherit; }
+.v8-vtick { width: 28px; height: 28px; border-radius: 0; border: 1px solid #c9d4da; background: transparent; color: #c9d4da; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v8-bignum { font-size: 34px; font-weight: 800; color: #dbe3e7; line-height: 1; font-variant-numeric: tabular-nums; flex-shrink: 0; padding-top: 4px; width: 46px; }
+.v8-vbody { flex: 1; }
+.v8-var { font-size: 28px; line-height: 2.05; text-align: right; color: #22262a; }
+.v8-ven { font-size: 13.5px; color: #4c5a62; line-height: 1.55; margin-top: 3px; }
+.v8-verse.playing .v8-bignum { color: #ab2439; }
 .rise { animation: protoRise 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 .rise-1 { animation-delay: 30ms; } .rise-2 { animation-delay: 60ms; } .rise-3 { animation-delay: 90ms; }
 @keyframes protoRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -295,10 +528,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 
 <nav class="proto-picker" aria-label="Prototype variants">
   <span class="proto-picker-highlight" aria-hidden="true"></span>
-  <button class="proto-picker-item" data-active aria-current="true">Washi</button>
-  <button class="proto-picker-item">Night</button>
-  <button class="proto-picker-item">Kacho</button>
-  <button class="proto-picker-item">Ledger</button>
+  <button class="proto-picker-item" data-active aria-current="true">Ink Wash</button>
+  <button class="proto-picker-item">Kinpaku</button>
+  <button class="proto-picker-item">Onsen</button>
+  <button class="proto-picker-item">Tanzaku</button>
   <span class="proto-picker-divider" aria-hidden="true"></span>
   <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">&#8635;</button>
 </nav>
@@ -589,6 +822,189 @@ function renderLedger() {
   </div>`;
 }
 
+/* ---- round 2: riff around Washi ---- */
+
+function scaffold(cls, subtitle, titleHTML, headExtra) {
+  return `
+  <header class="${cls}-top rise">
+    <div><div class="${cls}-brand">۞ Quran Memoriser</div><div class="${cls}-sub">${subtitle}</div></div>
+    ${chipRow(cls)}
+  </header>
+  <main class="${cls}-main">
+    <div class="${cls}-filters rise-1">${filters(cls)}</div>
+    ${headExtra}
+  </main>`;
+}
+
+function renderInkWash() {
+  const cards = visibleSurahs().map((s, i) => `
+    <div class="v5-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <div class="v5-card-top"><span class="v5-num">${String(s.ch).padStart(3, "0")}</span><span class="v5-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v5-serif v5-name">${esc(s.name)}</div>
+      <div class="v5-meta">${s.verses} VERSES${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</div>
+      <button class="v5-pill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}"><span class="sq"></span>${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRow("v5", v)).join("");
+  return `
+  <div class="v5">
+    <header class="v5-top rise">
+      <div><div class="v5-serif v5-brand"><span class="mark">۞</span>Quran Memoriser</div><div class="v5-sub">Ink Wash — White · Black · Pompeian Red (Wada)</div></div>
+      ${chipRow("v5")}
+    </header>
+    <main class="v5-main">
+      <div class="v5-filters rise-1">${filters("v5")}</div>
+      <div class="v5-grid rise-2">${cards}</div>
+      <section class="v5-sec">
+        <a class="v5-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v5-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v5-serif v5-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v5-pill p-status" data-status="${state.status[2]}" data-ch="2"><span class="sq"></span>${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v5-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v5-controls">
+            <button class="v5-btn f p-playpart">▶ Play part</button>
+            <button class="v5-btn">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v5")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderKinpaku() {
+  const cards = visibleSurahs().map((s, i) => `
+    <div class="v6-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <div class="v6-card-top"><span class="v6-num">${s.ch}</span><span class="v6-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v6-name">${esc(s.name)}</div>
+      <div class="v6-meta">${s.verses} verses${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</div>
+      <button class="v6-pill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRow("v6", v)).join("");
+  return `
+  <div class="v6">
+    <header class="v6-top rise">
+      <div><div class="v6-brand"><span class="mark">۞</span>Quran Memoriser</div><div class="v6-sub">Kinpaku — Cinnamon Buff · Madder Brown · Gold leaf (Wada 323)</div></div>
+      ${chipRow("v6")}
+    </header>
+    <main class="v6-main">
+      <div class="v6-filters rise-1">${filters("v6")}</div>
+      <div class="v6-grid rise-2">${cards}</div>
+      <section class="v6-sec">
+        <a class="v6-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v6-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v6-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v6-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v6-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v6-controls">
+            <button class="v6-btn p-playpart">▶ Play part</button>
+            <button class="v6-btn o">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v6")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderOnsen() {
+  const cards = visibleSurahs().map((s, i) => `
+    <div class="v7-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <div class="v7-card-top"><span class="v7-num">${s.ch}</span><span class="v7-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v7-name">${esc(s.name)}</div>
+      <div class="v7-meta">${s.verses} verses${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</div>
+      <button class="v7-pill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRow("v7", v)).join("");
+  return `
+  <div class="v7">
+    <header class="v7-top rise">
+      <div><div class="v7-brand"><span class="mark">۞</span>Quran Memoriser</div><div class="v7-sub">Onsen — Corinthian Pink · Venice Green · Light Mauve (Wada 128)</div></div>
+      ${chipRow("v7")}
+    </header>
+    <main class="v7-main">
+      <div class="v7-filters rise-1">${filters("v7")}</div>
+      <div class="v7-grid rise-2">${cards}</div>
+      <section class="v7-sec">
+        <a class="v7-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v7-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v7-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v7-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v7-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v7-controls">
+            <button class="v7-btn p-playpart">▶ Play part</button>
+            <button class="v7-btn o">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v7")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function verseRowTanzaku(v) {
+  const on = state.ticked[2].has(v.n);
+  return `
+  <div class="v8-verse ${on ? "mem" : ""}" data-v="${v.n}">
+    <div class="v8-vtools">
+      <button class="v8-vplay p-play" data-v="${v.n}" title="Play 2:${v.n}">▶</button>
+      <button class="v8-vtick p-tick" data-v="${v.n}" ${on ? "data-on" : ""} title="Mark memorised">✓</button>
+    </div>
+    <span class="v8-bignum">${String(v.n).padStart(2, "0")}</span>
+    <div class="v8-vbody">
+      <div class="v8-var ar">${esc(v.ar)}</div>
+      <div class="v8-ven">${esc(v.en)}</div>
+    </div>
+  </div>`;
+}
+
+function renderTanzaku() {
+  const rows = visibleSurahs().map((s, i) => `
+    <div class="v8-row rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <span class="v8-rnum">${String(s.ch).padStart(3, "0")}</span>
+      <span class="v8-rname">${esc(s.name)}</span>
+      <span class="v8-rar ar">${esc(s.ar)}</span>
+      <span class="v8-rmeta">${s.verses} v${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</span>
+      <button class="v8-rpill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRowTanzaku(v)).join("");
+  return `
+  <div class="v8">
+    <header class="v8-top rise">
+      <div><div class="v8-brand"><span class="mark">۞</span> QURAN MEMORISER</div><div class="v8-sub">Tanzaku — Pompeian Red · Mineral Gray (Wada 30)</div></div>
+      ${chipRow("v8")}
+    </header>
+    <main class="v8-main">
+      <div class="v8-filters rise-1">${filters("v8")}</div>
+      <div class="v8-list rise-2">${rows}</div>
+      <section class="v8-sec">
+        <a class="v8-crumb" href="#" onclick="return false">← ALL CHAPTERS</a>
+        <div class="v8-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v8-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v8-rpill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v8-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v8-controls">
+            <button class="v8-btn p-playpart">▶ Play part</button>
+            <button class="v8-btn g">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v8")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
 function filters(cls) {
   const defs = [["all", "All"], ["done", "Memorised"], ["partial", "Partial"], ["next", "Next"], ["later", "Later"], ["unset", "Not set"]];
   return defs.map(([id, label]) =>
@@ -714,7 +1130,7 @@ function wireInteractions(root) {
   });
 }
 
-const variants = [renderWashi, renderNight, renderKacho, renderLedger];
+const variants = [renderInkWash, renderKinpaku, renderOnsen, renderTanzaku];
 const stage = document.getElementById("stage");
 const picker = document.querySelector(".proto-picker");
 const highlight = picker.querySelector(".proto-picker-highlight");
