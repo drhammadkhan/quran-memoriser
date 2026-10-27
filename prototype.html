@@ -429,7 +429,64 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .v7-ven { font-size: 15px; color: #6d5a60; line-height: 1.55; }
 .v7-verse.playing { box-shadow: 0 0 0 3px #e39aa4; }
 
-/* ============ V8 TANZAKU — strip rhythm (Wada #30: Pompeian Red / Mineral Gray) ============ */
+/* ============ V9 AOZORA — airy cool float (Wada #287: Pale King's Blue / Eosine Pink / Pyrite Yellow / Calamine Blue) ============ */
+.v9 { background: #f1f6fa; color: #24344a; padding-bottom: 80px; }
+.v9-top { background: rgba(255, 255, 255, 0.75); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-bottom: 1px solid #e3ecf3; padding: 15px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v9-brand { font-size: 19px; font-weight: 600; letter-spacing: 0.2px; }
+.v9-brand .mark { color: #f37f94; margin-right: 8px; }
+.v9-sub { font-size: 11.5px; color: #7c8ba0; margin-top: 2px; font-weight: 500; }
+.v9-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v9-chip { background: #fff; border: 1px solid #e3ecf3; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #7c8ba0; box-shadow: 0 1px 5px rgba(36, 52, 74, 0.05); }
+.v9-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.v9-main { max-width: 1060px; margin: 0 auto; padding: 28px 22px; }
+.v9-filters { display: flex; gap: 7px; margin-bottom: 22px; flex-wrap: wrap; }
+.v9-filter { border: 1px solid #dfe9f1; background: rgba(255,255,255,0.6); color: #7c8ba0; border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.v9-filter[data-active] { background: #24344a; color: #f1f6fa; border-color: #24344a; }
+.v9-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 16px; }
+.v9-card { background: #fff; border: 1px solid #e6eef5; border-radius: 15px; padding: 15px 16px 13px; cursor: pointer; box-shadow: 0 5px 18px rgba(36, 52, 74, 0.06); border-top: 3px solid #e3ecf3; }
+.v9-card[data-status=done] { border-top-color: #25866f; }
+.v9-card[data-status=next] { border-top-color: #d97a3d; }
+.v9-card[data-status=partial] { border-top-color: #e0708b; }
+.v9-card[data-status=later] { border-top-color: #6b87c9; }
+.v9-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v9-num { width: 27px; height: 27px; border-radius: 50%; background: #eef4f9; color: #7c8ba0; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.v9-cardar { font-size: 20px; color: #1d3a5f; }
+.v9-name { font-size: 16px; font-weight: 600; margin-top: 7px; }
+.v9-meta { font-size: 11.5px; color: #8b9aae; margin-top: 2px; }
+.v9-meta .tick { color: #25866f; font-weight: 700; }
+.v9-pill { margin-top: 10px; border: none; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; font-weight: 600; cursor: pointer; background: #eef4f9; color: #7c8ba0; font-family: inherit; }
+.v9-pill[data-status=done] { background: #dbf0ea; color: #1d6b57; }
+.v9-pill[data-status=next] { background: #fbe9dc; color: #a85a24; }
+.v9-pill[data-status=partial] { background: #fbdfe6; color: #ab4a63; }
+.v9-pill[data-status=later] { background: #e2eaf8; color: #47619c; }
+.v9-sec { margin-top: 46px; }
+.v9-crumb { color: #7c8ba0; font-size: 13px; text-decoration: none; }
+.v9-chhead { background: #fff; border: 1px solid #e6eef5; border-radius: 18px; padding: 19px 21px; box-shadow: 0 8px 26px rgba(36, 52, 74, 0.07); }
+.v9-chtitle { font-size: 22px; font-weight: 600; }
+.v9-chtitle .ar { font-size: 27px; color: #1d3a5f; margin-left: 12px; }
+.v9-chmeta { font-size: 12.5px; color: #8b9aae; margin-top: 4px; }
+.v9-chmeta b { color: #1d6b57; }
+.v9-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v9-btn { border: none; background: #24344a; color: #f1f6fa; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(36, 52, 74, 0.18); }
+.v9-btn.o { background: #eef4f9; color: #24344a; box-shadow: none; }
+.v9-part { margin: 22px 0 14px; padding: 11px 17px; background: #e8f1f8; border-radius: 14px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v9-part .no { font-weight: 700; color: #24344a; }
+.v9-part .range { font-size: 12px; color: #7c8ba0; margin-left: 10px; }
+.v9-part .cnt { font-size: 12px; color: #1d6b57; font-weight: 700; margin-left: 10px; }
+.v9-partbtns { display: flex; gap: 7px; }
+.v9-ptick { border: none; background: #fff; color: #1d6b57; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 1px 4px rgba(36, 52, 74, 0.08); }
+.v9-ptick[data-on] { background: #25866f; color: #fff; }
+.v9-pplay { border: none; background: #f37f94; color: #fff; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.v9-verse { background: #fff; border: 1px solid #e6eef5; border-radius: 16px; padding: 16px 19px; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(36, 52, 74, 0.05); }
+.v9-verse.mem { background: #f3faf7; border-color: #cfe9e1; }
+.v9-vtop { display: flex; align-items: center; gap: 9px; }
+.v9-vplay { width: 31px; height: 31px; border-radius: 50%; border: none; background: #e8f1f8; color: #1d3a5f; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v9-vtick { width: 31px; height: 31px; border-radius: 50%; border: none; background: #eef4f9; color: #c3d1de; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v9-vtick[data-on] { background: #25866f; color: #fff; }
+.v9-vref { font-size: 11px; letter-spacing: 1px; color: #9aa9bc; font-weight: 600; }
+.v9-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 7px 0 2px; color: #1d2f47; }
+.v9-ven { font-size: 15px; color: #5d6d81; line-height: 1.55; }
+.v9-verse.playing { box-shadow: 0 0 0 3px #f37f94, 0 8px 22px rgba(243, 127, 148, 0.2); }
 .v8 { background: #fafbfb; color: #22262a; padding-bottom: 80px; }
 .v8-top { background: #fafbfb; border-bottom: 2px solid #22262a; padding: 13px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
 .v8-brand { font-size: 17px; font-weight: 800; letter-spacing: 0.6px; }
@@ -501,10 +558,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 
 <nav class="proto-picker" aria-label="Prototype variants">
   <span class="proto-picker-highlight" aria-hidden="true"></span>
-  <button class="proto-picker-item" data-active aria-current="true">Ink Wash</button>
-  <button class="proto-picker-item">Kinpaku</button>
+  <button class="proto-picker-item" data-active aria-current="true">Washi</button>
+  <button class="proto-picker-item">Ink Wash</button>
   <button class="proto-picker-item">Onsen</button>
-  <button class="proto-picker-item">Tanzaku</button>
+  <button class="proto-picker-item">Aozora</button>
   <span class="proto-picker-divider" aria-hidden="true"></span>
   <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">&#8635;</button>
 </nav>
@@ -978,6 +1035,44 @@ function renderTanzaku() {
   </div>`;
 }
 
+function renderAozora() {
+  const cards = visibleSurahs().map((s, i) => `
+    <div class="v9-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <div class="v9-card-top"><span class="v9-num">${s.ch}</span><span class="v9-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v9-name">${esc(s.name)}</div>
+      <div class="v9-meta">${s.verses} verses${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</div>
+      <button class="v9-pill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRow("v9", v)).join("");
+  return `
+  <div class="v9">
+    <header class="v9-top rise">
+      <div><div class="v9-brand"><span class="mark">۞</span>Quran Memoriser</div><div class="v9-sub">Aozora — Pale King's Blue · Eosine Pink · Pyrite Yellow (Wada 287)</div></div>
+      ${chipRow("v9")}
+    </header>
+    <main class="v9-main">
+      <div class="v9-filters rise-1">${filters("v9")}</div>
+      <div class="v9-grid rise-2">${cards}</div>
+      <section class="v9-sec">
+        <a class="v9-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v9-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v9-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v9-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v9-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v9-controls">
+            <button class="v9-btn p-playpart">▶ Play part</button>
+            <button class="v9-btn o">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v9")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
 function filters(cls) {
   const defs = [["all", "All"], ["done", "Memorised"], ["partial", "Partial"], ["next", "Next"], ["later", "Later"], ["unset", "Not set"]];
   return defs.map(([id, label]) =>
@@ -1103,7 +1198,7 @@ function wireInteractions(root) {
   });
 }
 
-const variants = [renderInkWash, renderKinpaku, renderOnsen, renderTanzaku];
+const variants = [renderWashi, renderInkWash, renderOnsen, renderAozora];
 const stage = document.getElementById("stage");
 const picker = document.querySelector(".proto-picker");
 const highlight = picker.querySelector(".proto-picker-highlight");
@@ -1120,15 +1215,13 @@ function moveHighlight() {
 
 function remount() {
   stage.innerHTML = "";
-  requestAnimationFrame(() => {
-    state = freshState();
-    const html = variants[current]();
-    const holder = document.createElement("div");
-    holder.innerHTML = html;
-    const node = holder.firstElementChild;
-    stage.appendChild(node);
-    if (!wired) { wireInteractions(stage); wired = true; }
-  });
+  void stage.offsetHeight; // force reflow so entrance animations re-run (no rAF: hidden tabs never fire it)
+  state = freshState();
+  const html = variants[current]();
+  const holder = document.createElement("div");
+  holder.innerHTML = html;
+  stage.appendChild(holder.firstElementChild);
+  if (!wired) { wireInteractions(stage); wired = true; }
 }
 
 function setActive(i) {

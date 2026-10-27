@@ -1,8 +1,12 @@
-/* Service worker: precache the whole app (shell + Quran data) so it runs
- * entirely on the device after the first load. Verse audio is NOT precached —
- * it is managed separately by the in-app "Offline audio" downloads.
+/* Service worker: offline support for the whole app.
+ * Strategy:
+ *  - Code (HTML/CSS/JS): network-first so deploys apply on the next load;
+ *    falls back to the cache when offline.
+ *  - Immutable content (Quran data, font, icons): cache-first.
+ *  - Recitation audio: never intercepted — managed by the in-app
+ *    "Offline audio" downloads (separate caches).
  */
-const CACHE = "qm-app-v1";
+const CACHE = "qm-app-v2";
 const CORE = [
   "./",
   "index.html",
@@ -16,12 +20,12 @@ const CORE = [
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
 ];
+const CACHE_FIRST = /(\/|^)(data|assets|icons)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE);
-    // precache all 114 chapter data files (generated list, no server needed)
     await Promise.all(Array.from({ length: 114 }, (_, i) =>
       cache.add(`data/chapters/${i + 1}.json`).catch(() => {})
     ));
@@ -39,23 +43,21 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  // never intercept recitation audio (handled by the app's own audio caches)
   if (url.hostname.endsWith("alislam.cloud")) return;
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const cached = await cache.match(event.request, { ignoreSearch: true });
-    if (cached) {
-      // refresh in the background for next time
-      event.waitUntil(cache.add(event.request).catch(() => {}));
-      return cached;
-    }
+    const cached = await cache.match(event.request);
+
+    if (cached && CACHE_FIRST.test(url.pathname)) return cached;
+
     try {
       const fresh = await fetch(event.request);
-      if (fresh.ok) cache.put(event.request, fresh.clone());
+      if (fresh && fresh.ok) cache.put(event.request, fresh.clone());
       return fresh;
     } catch (err) {
+      if (cached) return cached;
       const fallback = await cache.match("./");
       if (fallback) return fallback;
       throw err;
