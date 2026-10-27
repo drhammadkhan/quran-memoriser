@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Quran Memoriser — design variants</title>
+<style>
+@font-face { font-family: "ManzoorNaskh"; src: url("assets/ManzoorNaskh.ttf") format("truetype"); font-display: swap; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+#stage > div { min-height: 100vh; }
+.ar { font-family: "ManzoorNaskh", serif; direction: rtl; }
+
+/* ============ shared wiring bits ============ */
+.hidden { display: none !important; }
+
+/* ============ V1 WASHI — paper calm (Wada #190: Ivory Buff / English Red / Black) ============ */
+.v1 { background: #f6efdc; color: #232019; padding-bottom: 80px; }
+.v1-serif { font-family: Georgia, "Times New Roman", serif; }
+.v1-top { background: #f9f3e1; border-bottom: 1px solid #e0d4b4; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v1-brand { font-size: 21px; font-weight: 700; letter-spacing: 0.2px; }
+.v1-brand .mark { color: #d96629; margin-right: 8px; }
+.v1-sub { font-size: 11.5px; color: #7a7160; margin-top: 2px; }
+.v1-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v1-chip { border: 1px solid #ddcfab; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #5d5647; background: #fcf7e9; }
+.v1-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+.v1-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.v1-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.v1-filter { border: 1px solid #d8cba6; background: transparent; border-radius: 999px; padding: 5px 13px; font-size: 12.5px; color: #5d5647; cursor: pointer; }
+.v1-filter[data-active] { background: #232019; color: #f6efdc; border-color: #232019; }
+.v1-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.v1-card { border: 1px solid #e0d4b4; border-radius: 10px; padding: 13px 15px 11px; background: #fcf7e9; cursor: pointer; border-left-width: 4px; border-left-color: #e0d4b4; }
+.v1-card[data-status=done] { border-left-color: #437742; }
+.v1-card[data-status=next] { border-left-color: #d96629; }
+.v1-card[data-status=partial] { border-left-color: #f27291; }
+.v1-card[data-status=later] { border-left-color: #5a82b3; }
+.v1-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v1-num { width: 27px; height: 27px; border-radius: 50%; border: 1px solid #c9b98d; color: #5d5647; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.v1-cardar { font-size: 19px; color: #232019; }
+.v1-name { font-size: 17px; font-weight: 700; margin-top: 6px; }
+.v1-meta { font-size: 12px; color: #7a7160; margin-top: 2px; }
+.v1-meta .tick { color: #437742; font-weight: 700; }
+.v1-pill { margin-top: 9px; border: 1px solid #c9b98d; background: transparent; border-radius: 4px; padding: 3px 9px; font-size: 11.5px; letter-spacing: 0.4px; color: #7a7160; cursor: pointer; text-transform: uppercase; font-family: inherit; }
+.v1-pill[data-status=done] { color: #437742; border-color: #437742; }
+.v1-pill[data-status=next] { color: #d96629; border-color: #d96629; }
+.v1-pill[data-status=partial] { color: #c04a68; border-color: #f27291; }
+.v1-pill[data-status=later] { color: #5a82b3; border-color: #5a82b3; }
+.v1-sec { margin-top: 42px; }
+.v1-crumb { color: #7a7160; font-size: 13px; text-decoration: none; }
+.v1-chhead { border: 1px solid #e0d4b4; background: #fcf7e9; border-radius: 10px; padding: 18px 20px; }
+.v1-chtitle { font-size: 24px; }
+.v1-chtitle .ar { font-size: 27px; color: #232019; margin-left: 12px; }
+.v1-chmeta { font-size: 12.5px; color: #7a7160; margin-top: 4px; }
+.v1-chmeta b { color: #437742; }
+.v1-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v1-btn { border: 1px solid #232019; background: #232019; color: #f6efdc; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.v1-btn.o { background: transparent; color: #232019; }
+.v1-part { margin: 20px 0 12px; padding: 10px 16px; border-left: 3px solid #d96629; background: #f3ead2; border-radius: 0 8px 8px 0; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v1-part .no { font-weight: 700; }
+.v1-part .range { font-size: 12.5px; color: #5d5647; margin-left: 10px; }
+.v1-part .cnt { font-size: 12.5px; color: #437742; font-weight: 700; margin-left: 10px; }
+.v1-partbtns { display: flex; gap: 7px; }
+.v1-ptick { border: 1px solid #437742; color: #437742; background: transparent; border-radius: 4px; padding: 4px 10px; font-size: 11.5px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; }
+.v1-ptick[data-on] { background: #437742; color: #fcf7e9; }
+.v1-pplay { border: 1px solid #232019; background: #232019; color: #f6efdc; border-radius: 4px; padding: 4px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+.v1-verse { background: #fcf7e9; border: 1px solid #e6dab9; border-radius: 10px; padding: 15px 18px; margin-bottom: 9px; }
+.v1-verse.mem { border-left: 3px solid #437742; }
+.v1-vtop { display: flex; align-items: center; gap: 9px; }
+.v1-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; cursor: pointer; color: #5d5647; font-size: 12px; font-family: inherit; }
+.v1-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; color: #c9b98d; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v1-vtick[data-on] { background: #437742; border-color: #437742; color: #fcf7e9; }
+.v1-vref { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #a08c5f; }
+.v1-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #1d1a13; }
+.v1-ven { font-size: 15px; color: #4a4436; line-height: 1.55; }
+.v1-verse.playing { box-shadow: 0 0 0 2px #d96629; }
+
+/* ============ V2 NIGHT TILAWAH — dark recitation (Wada #344/#211: Deep Indigo / Cinnamon Buff / Apricot Orange) ============ */
+.v2 { background: #081227; color: #e8ecf8; padding-bottom: 80px; }
+.v2-top { background: #0a1630; border-bottom: 1px solid #1d2d55; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v2-brand { font-size: 19px; font-weight: 700; color: #fdc57e; }
+.v2-sub { font-size: 11.5px; color: #8fa0c8; margin-top: 2px; }
+.v2-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v2-chip { background: rgba(253, 197, 126, 0.07); border: 1px solid #26385f; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #aab6d8; }
+.v2-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.v2-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.v2-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.v2-filter { border: 1px solid #26385f; background: transparent; color: #aab6d8; border-radius: 999px; padding: 5px 13px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.v2-filter[data-active] { background: #fdc57e; color: #081227; border-color: #fdc57e; font-weight: 600; }
+.v2-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.v2-card { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 13px 15px 11px; cursor: pointer; border-left: 4px solid #1d2d55; }
+.v2-card[data-status=done] { border-left-color: #7fd6ae; }
+.v2-card[data-status=next] { border-left-color: #f6a45c; }
+.v2-card[data-status=partial] { border-left-color: #f2a0be; }
+.v2-card[data-status=later] { border-left-color: #93b1f2; }
+.v2-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v2-num { width: 27px; height: 27px; border-radius: 50%; border: 1px solid #3a4d7c; color: #aab6d8; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.v2-cardar { font-size: 19px; color: #f3e3bd; }
+.v2-name { font-size: 16.5px; font-weight: 700; margin-top: 6px; }
+.v2-meta { font-size: 12px; color: #8fa0c8; margin-top: 2px; }
+.v2-meta .tick { color: #7fd6ae; font-weight: 700; }
+.v2-pill { margin-top: 9px; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer; background: #12234a; border: 1px solid #26385f; color: #8fa0c8; font-family: inherit; }
+.v2-pill[data-status=done] { color: #7fd6ae; border-color: #2f6b55; }
+.v2-pill[data-status=next] { color: #f6a45c; border-color: #7a4c2a; }
+.v2-pill[data-status=partial] { color: #f2a0be; border-color: #74415c; }
+.v2-pill[data-status=later] { color: #93b1f2; border-color: #35497e; }
+.v2-sec { margin-top: 42px; }
+.v2-crumb { color: #8fa0c8; font-size: 13px; text-decoration: none; }
+.v2-chhead { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 18px 20px; }
+.v2-chtitle { font-size: 23px; color: #fdc57e; }
+.v2-chtitle .ar { font-size: 27px; color: #f3e3bd; margin-left: 12px; }
+.v2-chmeta { font-size: 12.5px; color: #8fa0c8; margin-top: 4px; }
+.v2-chmeta b { color: #7fd6ae; }
+.v2-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v2-btn { border: none; background: #fdc57e; color: #081227; border-radius: 8px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.v2-btn.o { background: transparent; color: #e8ecf8; border: 1px solid #3a4d7c; font-weight: 400; }
+.v2-part { margin: 20px 0 12px; padding: 11px 16px; background: linear-gradient(90deg, rgba(253,197,126,0.12), rgba(253,197,126,0.03)); border: 1px solid #3d335c; border-radius: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v2-part .no { font-weight: 700; color: #fdc57e; }
+.v2-part .range { font-size: 12.5px; color: #aab6d8; margin-left: 10px; }
+.v2-part .cnt { font-size: 12.5px; color: #7fd6ae; font-weight: 700; margin-left: 10px; }
+.v2-partbtns { display: flex; gap: 7px; }
+.v2-ptick { border: 1px solid #2f6b55; color: #7fd6ae; background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+.v2-ptick[data-on] { background: #7fd6ae; color: #081227; font-weight: 600; }
+.v2-pplay { border: 1px solid #fdc57e; color: #fdc57e; background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+.v2-verse { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 15px 18px; margin-bottom: 10px; }
+.v2-verse.mem { border-left: 3px solid #7fd6ae; background: #0f2145; }
+.v2-vtop { display: flex; align-items: center; gap: 9px; }
+.v2-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #3a4d7c; background: transparent; color: #fdc57e; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v2-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #3a4d7c; background: transparent; color: #43537d; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v2-vtick[data-on] { background: #7fd6ae; border-color: #7fd6ae; color: #081227; }
+.v2-vref { font-size: 11px; letter-spacing: 1px; color: #6374a3; }
+.v2-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #f6e7c2; }
+.v2-ven { font-size: 15px; color: #b9c4e2; line-height: 1.55; }
+.v2-verse.playing { box-shadow: 0 0 0 2px #fdc57e, 0 0 24px rgba(253,197,126,0.25); }
+
+/* ============ V3 KACHO — botanical bright (Wada #300: Grenadine Pink / Cream Yellow / Turquoise Green / Calamine Blue) ============ */
+.v3 { background: #ffffff; color: #23312e; padding-bottom: 80px; }
+.v3-top { background: #fff; border-bottom: 2px solid #ffe9e3; padding: 15px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v3-brand { font-size: 20px; font-weight: 800; color: #e96a4b; }
+.v3-sub { font-size: 11.5px; color: #97a8a2; margin-top: 2px; }
+.v3-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.v3-chip { border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
+.v3-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.v3-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.v3-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.v3-filter { border: 2px solid #eef3f1; background: #fff; color: #97a8a2; border-radius: 999px; padding: 5px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.v3-filter[data-active] { background: #23312e; color: #fff; border-color: #23312e; }
+.v3-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.v3-card { background: #f7faf8; border: 2px solid #e3efe9; border-radius: 18px; padding: 15px 16px 13px; cursor: pointer; transition: transform 180ms cubic-bezier(0.22, 1.4, 0.36, 1), box-shadow 180ms ease-out; }
+.v3-card:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(35, 49, 46, 0.10); }
+.v3-card[data-status=done] { background: #e2f5ee; border-color: #b5decc; }
+.v3-card[data-status=next] { background: #ffece5; border-color: #ffd0c2; }
+.v3-card[data-status=partial] { background: #fdeef0; border-color: #f8d3da; }
+.v3-card[data-status=later] { background: #e9f6f8; border-color: #c5e6eb; }
+.v3-card-top { display: flex; justify-content: space-between; align-items: center; }
+.v3-num { width: 30px; height: 30px; border-radius: 11px; background: #23312e; color: #fff; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.v3-cardar { font-size: 20px; color: #2aa08a; }
+.v3-name { font-size: 17px; font-weight: 800; margin-top: 7px; }
+.v3-meta { font-size: 12px; color: #7d948d; margin-top: 2px; }
+.v3-meta .tick { color: #1f8f74; font-weight: 800; }
+.v3-pill { margin-top: 10px; border: none; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; background: #e3efe9; color: #7d948d; font-family: inherit; }
+.v3-pill[data-status=done] { background: #2aa08a; color: #fff; }
+.v3-pill[data-status=next] { background: #f48067; color: #fff; }
+.v3-pill[data-status=partial] { background: #f8b6ba; color: #7c3a44; }
+.v3-pill[data-status=later] { background: #78cdd0; color: #0f4c53; }
+.v3-sec { margin-top: 42px; }
+.v3-crumb { color: #97a8a2; font-size: 13px; text-decoration: none; font-weight: 600; }
+.v3-chhead { background: #fff7ee; border: 2px solid #fbe3c4; border-radius: 20px; padding: 19px 21px; }
+.v3-chtitle { font-size: 24px; }
+.v3-chtitle .ar { font-size: 28px; color: #2aa08a; margin-left: 12px; }
+.v3-chmeta { font-size: 12.5px; color: #97a8a2; margin-top: 4px; }
+.v3-chmeta b { color: #1f8f74; }
+.v3-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.v3-btn { border: none; background: #f48067; color: #fff; border-radius: 999px; padding: 9px 17px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(244,128,103,0.35); }
+.v3-btn.o { background: #fff; color: #23312e; border: 2px solid #e3efe9; box-shadow: none; }
+.v3-part { margin: 20px 0 12px; padding: 12px 17px; background: #e2f5ee; border-radius: 16px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v3-part .no { font-weight: 800; color: #1f8f74; }
+.v3-part .range { font-size: 12.5px; color: #55716a; margin-left: 10px; }
+.v3-part .cnt { font-size: 12.5px; color: #1f8f74; font-weight: 800; margin-left: 10px; }
+.v3-partbtns { display: flex; gap: 7px; }
+.v3-ptick { border: none; color: #1f8f74; background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.v3-ptick[data-on] { background: #2aa08a; color: #fff; }
+.v3-pplay { border: none; background: #23312e; color: #fff; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.v3-verse { background: #fff; border: 2px solid #edf3f0; border-radius: 18px; padding: 16px 19px; margin-bottom: 11px; }
+.v3-verse.mem { background: #f2fbf7; border-color: #b5decc; }
+.v3-vtop { display: flex; align-items: center; gap: 9px; }
+.v3-vplay { width: 32px; height: 32px; border-radius: 12px; border: none; background: #e2f5ee; color: #1f8f74; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v3-vtick { width: 32px; height: 32px; border-radius: 12px; border: 2px solid #dbe6e2; background: #fff; color: #c9d6d1; cursor: pointer; font-size: 13px; font-family: inherit; }
+.v3-vtick[data-on] { background: #2aa08a; border-color: #2aa08a; color: #fff; }
+.v3-vref { font-size: 11px; letter-spacing: 0.8px; color: #97a8a2; font-weight: 700; }
+.v3-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #1d2b28; }
+.v3-ven { font-size: 15px; color: #4c5f59; line-height: 1.55; }
+.v3-verse.playing { box-shadow: 0 0 0 3px #f48067; border-color: #f48067; }
+
+/* ============ V4 LEDGER — dense typographic (Wada #221: Black / Neutral Gray / Carmine Red) ============ */
+.v4 { background: #fbfbfa; color: #141414; padding-bottom: 80px; }
+.v4-top { background: #fff; border-bottom: 1px solid #e3e3e0; padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.v4-brand { font-size: 16px; font-weight: 800; letter-spacing: -0.2px; }
+.v4-brand .mark { color: #a62c37; }
+.v4-sub { font-size: 10.5px; color: #8b8b87; letter-spacing: 1.4px; text-transform: uppercase; margin-top: 2px; }
+.v4-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.v4-chip { font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: #5c5c58; border-left: 3px solid #b6bfc1; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.v4-main { max-width: 980px; margin: 0 auto; padding: 22px 22px; }
+.v4-filters { display: flex; gap: 0; margin-bottom: 18px; border-bottom: 1px solid #141414; }
+.v4-filter { border: none; background: transparent; padding: 7px 14px 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #8b8b87; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; }
+.v4-filter[data-active] { color: #141414; border-bottom-color: #a62c37; font-weight: 700; }
+.v4-list { display: flex; flex-direction: column; }
+.v4-row { display: flex; align-items: center; gap: 12px; padding: 9px 6px 9px 0; border-bottom: 1px solid #e9e9e6; cursor: pointer; }
+.v4-rail { width: 3px; align-self: stretch; background: #e3e3e0; flex-shrink: 0; }
+.v4-row[data-status=done] .v4-rail { background: #3f7d4e; }
+.v4-row[data-status=next] .v4-rail { background: #c96f2a; }
+.v4-row[data-status=partial] .v4-rail { background: #d5648a; }
+.v4-row[data-status=later] .v4-rail { background: #4a6fa5; }
+.v4-rnum { width: 26px; text-align: right; font-size: 12.5px; color: #8b8b87; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.v4-rname { font-size: 14px; font-weight: 600; flex: 1; }
+.v4-rar { font-size: 17px; color: #141414; }
+.v4-rmeta { font-size: 11.5px; color: #8b8b87; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.v4-rmeta .tick { color: #3f7d4e; font-weight: 700; }
+.v4-rpill { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; flex-shrink: 0; cursor: pointer; border: none; background: #efefec; color: #8b8b87; font-family: inherit; font-weight: 700; }
+.v4-rpill[data-status=done] { background: #3f7d4e; color: #fff; }
+.v4-rpill[data-status=next] { background: #c96f2a; color: #fff; }
+.v4-rpill[data-status=partial] { background: #d5648a; color: #fff; }
+.v4-rpill[data-status=later] { background: #4a6fa5; color: #fff; }
+.v4-sec { margin-top: 40px; }
+.v4-crumb { color: #8b8b87; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; }
+.v4-chhead { border: 1px solid #141414; padding: 0; }
+.v4-chhead-top { padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.v4-chtitle { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+.v4-chtitle .ar { font-size: 25px; margin-left: 10px; }
+.v4-chmeta { font-size: 11.5px; color: #5c5c58; font-variant-numeric: tabular-nums; }
+.v4-chmeta b { color: #3f7d4e; }
+.v4-controls { border-top: 1px solid #e3e3e0; padding: 10px 18px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.v4-btn { border: 1px solid #141414; background: #141414; color: #fff; border-radius: 4px; padding: 6px 13px; font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; font-family: inherit; font-weight: 700; }
+.v4-btn.o { background: transparent; color: #141414; }
+.v4-part { margin: 22px 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 2px solid #141414; border-bottom: 1px solid #e3e3e0; padding: 8px 2px; }
+.v4-part .no { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 800; }
+.v4-part .no b { color: #a62c37; }
+.v4-part .range, .v4-part .cnt { font-size: 11.5px; color: #5c5c58; margin-left: 10px; font-variant-numeric: tabular-nums; }
+.v4-part .cnt { color: #3f7d4e; font-weight: 700; }
+.v4-partbtns { display: flex; gap: 6px; }
+.v4-ptick { border: 1px solid #141414; background: transparent; color: #141414; border-radius: 3px; padding: 3px 9px; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: inherit; font-weight: 700; }
+.v4-ptick[data-on] { background: #3f7d4e; border-color: #3f7d4e; color: #fff; }
+.v4-pplay { border: 1px solid #a62c37; color: #a62c37; background: transparent; border-radius: 3px; padding: 3px 9px; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: inherit; font-weight: 700; }
+.v4-verse { border-bottom: 1px solid #e9e9e6; padding: 13px 2px; }
+.v4-verse.mem .v4-vref { color: #3f7d4e; }
+.v4-verse.mem .v4-vtick { background: #3f7d4e; border-color: #3f7d4e; color: #fff; }
+.v4-vtop { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.v4-vplay { width: 26px; height: 26px; border-radius: 4px; border: 1px solid #d5d5d1; background: #fff; color: #5c5c58; cursor: pointer; font-size: 11px; font-family: inherit; }
+.v4-vtick { width: 26px; height: 26px; border-radius: 4px; border: 1px solid #d5d5d1; background: #fff; color: #cfcfcb; cursor: pointer; font-size: 12px; font-family: inherit; }
+.v4-vref { font-size: 12px; color: #a62c37; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+.v4-vlen { font-size: 10.5px; color: #b0b0ac; margin-left: auto; letter-spacing: 1px; text-transform: uppercase; }
+.v4-var { font-size: 27px; line-height: 2.05; text-align: right; margin: 2px 0; color: #141414; }
+.v4-ven { font-size: 14px; color: #3c3c39; line-height: 1.5; }
+.v4-verse.playing .v4-var { box-shadow: inset 0 -2px 0 #a62c37; }
+
+/* entrance motion — one per mount, sub-300ms, ease-out, reduced-motion safe */
+.rise { animation: protoRise 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rise-1 { animation-delay: 30ms; } .rise-2 { animation-delay: 60ms; } .rise-3 { animation-delay: 90ms; }
+@keyframes protoRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-1, .rise-2, .rise-3 { animation: none; }
+  .v3-card { transition: none; }
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<nav class="proto-picker" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+  <button class="proto-picker-item" data-active aria-current="true">Washi</button>
+  <button class="proto-picker-item">Night</button>
+  <button class="proto-picker-item">Kacho</button>
+  <button class="proto-picker-item">Ledger</button>
+  <span class="proto-picker-divider" aria-hidden="true"></span>
+  <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">&#8635;</button>
+</nav>
+
+<style>
+.proto-picker {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.82);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.proto-picker-highlight {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  will-change: transform;
+}
+.proto-picker[data-ready] .proto-picker-highlight {
+  transition:
+    transform 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    width 250ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .proto-picker[data-ready] .proto-picker-highlight { transition: none; }
+}
+.proto-picker-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+.proto-picker-item:hover { color: rgba(255, 255, 255, 0.85); }
+.proto-picker-item:active { transform: scale(0.97); }
+.proto-picker-item:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.4); outline-offset: 2px; }
+.proto-picker-item[data-active] { color: #fff; }
+.proto-picker-divider { width: 1px; height: 16px; margin: 0 4px; background: rgba(255, 255, 255, 0.12); }
+.proto-picker-replay { padding: 0 10px; font-size: 14px; }
+.proto-picker[data-position="top"] { bottom: auto; top: 24px; }
+</style>
+
+<script>
+const DATA = {"surahs": [{"ch": 1, "name": "Al-Fatihah", "ar": "الْفَاتِحَۃِ", "verses": 7}, {"ch": 2, "name": "Al-Baqarah", "ar": " الْبَقَرَۃ", "verses": 287}, {"ch": 4, "name": "An-Nisa'", "ar": "النِّسَآءِ", "verses": 177}, {"ch": 12, "name": "Yusuf", "ar": "یُوْسُفَ", "verses": 112}, {"ch": 18, "name": "Al-Kahf", "ar": "الْکَھْفِ", "verses": 111}, {"ch": 36, "name": "Ya Sin", "ar": "یٰسٓ", "verses": 84}, {"ch": 55, "name": "Ar-Rahman", "ar": "الرَّحْمٰنِ", "verses": 79}, {"ch": 67, "name": "Al-Mulk", "ar": "الْمُلْکِ", "verses": 31}, {"ch": 78, "name": "An-Naba'", "ar": "النَّبَاِ", "verses": 41}, {"ch": 112, "name": "Al-Ikhlas", "ar": "الْاِخْلاَصِ", "verses": 5}, {"ch": 113, "name": "Al-Falaq", "ar": "الْفَلَقِ", "verses": 6}, {"ch": 114, "name": "An-Nas", "ar": "النَّاسِ", "verses": 7}], "verses": [{"n": 1, "ar": "بِسۡمِ اللّٰہِ الرَّحۡمٰنِ الرَّحِیۡمِ ﴿۱﴾", "en": "In the name of Allah, the Gracious, the Merciful."}, {"n": 2, "ar": "الٓـمّٓ ۚ﴿۲﴾", "en": "Alif Lam Mim[✛]."}, {"n": 3, "ar": "ذٰلِکَ الۡکِتٰبُ لَا رَیۡبَ ۚۖۛ فِیۡہِ ۚۛ ہُدًی لِّلۡمُتَّقِیۡنَ ۙ﴿۳﴾", "en": "This is a perfect Book; there is no doubt in it; <i>it is</i> a guidance for the righteous,"}, {"n": 4, "ar": "الَّذِیۡنَ یُؤۡمِنُوۡنَ بِالۡغَیۡبِ وَیُقِیۡمُوۡنَ الصَّلٰوۃَ وَمِمَّا رَزَقۡنٰہُمۡ یُنۡفِقُوۡنَ ۙ﴿۴﴾", "en": "Who believe in the unseen and observe Prayer, and spend out of what We have provided for them;"}, {"n": 5, "ar": "وَالَّذِیۡنَ یُؤۡمِنُوۡنَ بِمَاۤ اُنۡزِلَ اِلَیۡکَ وَمَاۤ اُنۡزِلَ مِنۡ قَبۡلِکَ ۚ وَبِالۡاٰخِرَۃِ ہُمۡ یُوۡقِنُوۡنَ ؕ﴿۵﴾", "en": "And who believe in that which has been revealed to thee, and that which was revealed before thee, and they have firm faith in what is <i>yet</i> to come."}], "demoStatus": {"1": "done", "2": "partial", "4": "next", "12": "later", "18": "next", "36": "unset", "55": "later", "67": "unset", "78": "later", "112": "done", "113": "unset", "114": "partial"}, "demoTicked": {"1": 7, "2": 14, "112": 5, "114": 3}};
+
+const STATUSES = [
+  { id: "", label: "Not set" },
+  { id: "done", label: "Memorised" },
+  { id: "partial", label: "Partial" },
+  { id: "next", label: "Next" },
+  { id: "later", label: "Later" },
+];
+const statusInfo = (id) => STATUSES.find((s) => s.id === id) || STATUSES[0];
+const AUDIO = "https://files.alislam.cloud/audio/tilawat/ashiq/002-";
+const pad3 = (n) => String(n).padStart(3, "0");
+const audioUrl = (v) => AUDIO + pad3(v) + "-AR.mp3";
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// demo state, reset on each mount
+let state = null;
+function freshState() {
+  return {
+    status: { ...DATA.demoStatus },
+    ticked: { 2: new Set([1, 2]) },
+    filter: "all",
+  };
+}
+
+function chipRow(cls, dotColor) {
+  const counts = { done: 0, partial: 0, next: 0, later: 0 };
+  let vDone = 0;
+  for (const s of DATA.surahs) {
+    const st = state.status[s.ch];
+    if (counts[st] !== undefined) { counts[st]++; if (st === "done") vDone += s.verses; }
+  }
+  return `
+  <div class="${cls}-chips">
+    <span class="${cls}-chip"><span class="dot" style="background:#3f7d4e"></span>Memorised ${counts.done} · ${vDone.toLocaleString()} v</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#d5648a"></span>Partial ${counts.partial}</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#c96f2a"></span>Next ${counts.next}</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#4a6fa5"></span>Later ${counts.later}</span>
+  </div>`;
+}
+
+function visibleSurahs() {
+  if (state.filter === "all") return DATA.surahs;
+  if (state.filter === "unset") return DATA.surahs.filter((s) => !state.status[s.ch]);
+  return DATA.surahs.filter((s) => state.status[s.ch] === state.filter);
+}
+
+/* ============ variant renderers ============ */
+
+function renderWashi() {
+  const cards = visibleSurahs().map((s, i) => {
+    const st = state.status[s.ch] || "";
+    const t = DATA.demoTicked[s.ch] || 0;
+    return `
+    <div class="v1-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${st}" data-ch="${s.ch}">
+      <div class="v1-card-top"><span class="v1-num">${s.ch}</span><span class="v1-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v1-serif v1-name">${esc(s.name)}</div>
+      <div class="v1-meta">${s.verses} verses${t ? ` · <span class="tick">${t}✓</span>` : ""}</div>
+      <button class="v1-pill p-status" data-status="${st}" data-ch="${s.ch}">${statusInfo(st).label}</button>
+    </div>`;
+  }).join("");
+  const verses = DATA.verses.map((v) => verseRow("v1", v)).join("");
+  return `
+  <div class="v1">
+    <header class="v1-top rise">
+      <div><div class="v1-serif v1-brand"><span class="mark">۞</span>Quran Memoriser</div><div class="v1-sub">Washi — Ivory Buff · English Red · Black (Wada 190)</div></div>
+      ${chipRow("v1")}
+    </header>
+    <main class="v1-main">
+      <div class="v1-filters rise-1">${filters("v1")}</div>
+      <div class="v1-grid rise-2">${cards}</div>
+      <section class="v1-sec">
+        <a class="v1-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v1-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v1-serif v1-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v1-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v1-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v1-controls">
+            <button class="v1-btn p-playpart">▶ Play part</button>
+            <button class="v1-btn o">Maulawi Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v1")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderNight() {
+  const cards = visibleSurahs().map((s, i) => {
+    const st = state.status[s.ch] || "";
+    const t = DATA.demoTicked[s.ch] || 0;
+    return `
+    <div class="v2-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${st}" data-ch="${s.ch}">
+      <div class="v2-card-top"><span class="v2-num">${s.ch}</span><span class="v2-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v2-name">${esc(s.name)}</div>
+      <div class="v2-meta">${s.verses} verses${t ? ` · <span class="tick">${t}✓</span>` : ""}</div>
+      <button class="v2-pill p-status" data-status="${st}" data-ch="${s.ch}">${statusInfo(st).label}</button>
+    </div>`;
+  }).join("");
+  const verses = DATA.verses.map((v) => verseRow("v2", v)).join("");
+  return `
+  <div class="v2">
+    <header class="v2-top rise">
+      <div><div class="v2-brand">۞ Quran Memoriser</div><div class="v2-sub">Night Tilawah — Deep Indigo · Cinnamon Buff (Wada 344/211)</div></div>
+      ${chipRow("v2")}
+    </header>
+    <main class="v2-main">
+      <div class="v2-filters rise-1">${filters("v2")}</div>
+      <div class="v2-grid rise-2">${cards}</div>
+      <section class="v2-sec">
+        <a class="v2-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v2-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v2-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v2-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v2-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v2-controls">
+            <button class="v2-btn p-playpart">▶ Play part</button>
+            <button class="v2-btn o">Maulawi Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v2")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderKacho() {
+  const cards = visibleSurahs().map((s, i) => {
+    const st = state.status[s.ch] || "";
+    const t = DATA.demoTicked[s.ch] || 0;
+    return `
+    <div class="v3-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${st}" data-ch="${s.ch}">
+      <div class="v3-card-top"><span class="v3-num">${s.ch}</span><span class="v3-cardar ar">${esc(s.ar)}</span></div>
+      <div class="v3-name">${esc(s.name)}</div>
+      <div class="v3-meta">${s.verses} verses${t ? ` · <span class="tick">${t}✓</span>` : ""}</div>
+      <button class="v3-pill p-status" data-status="${st}" data-ch="${s.ch}">${statusInfo(st).label}</button>
+    </div>`;
+  }).join("");
+  const verses = DATA.verses.map((v) => verseRow("v3", v)).join("");
+  return `
+  <div class="v3">
+    <header class="v3-top rise">
+      <div><div class="v3-brand">۞ Quran Memoriser</div><div class="v3-sub">Kacho — Grenadine Pink · Turquoise Green · Calamine Blue (Wada 300)</div></div>
+      ${chipRow("v3")}
+    </header>
+    <main class="v3-main">
+      <div class="v3-filters rise-1">${filters("v3")}</div>
+      <div class="v3-grid rise-2">${cards}</div>
+      <section class="v3-sec">
+        <a class="v3-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="v3-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="v3-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v3-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v3-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v3-controls">
+            <button class="v3-btn p-playpart">▶ Play part</button>
+            <button class="v3-btn o">Maulawi Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v3")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderLedger() {
+  const rows = visibleSurahs().map((s, i) => {
+    const st = state.status[s.ch] || "";
+    const t = DATA.demoTicked[s.ch] || 0;
+    return `
+    <div class="v4-row rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${st}" data-ch="${s.ch}">
+      <span class="v4-rail"></span>
+      <span class="v4-rnum">${String(s.ch).padStart(3, "0")}</span>
+      <span class="v4-rname">${esc(s.name)}</span>
+      <span class="v4-rar ar">${esc(s.ar)}</span>
+      <span class="v4-rmeta">${s.verses} v${t ? ` · <span class="tick">${t}✓</span>` : ""}</span>
+      <button class="v4-rpill p-status" data-status="${st}" data-ch="${s.ch}">${statusInfo(st).label}</button>
+    </div>`;
+  }).join("");
+  const verses = DATA.verses.map((v) => verseRow("v4", v)).join("");
+  return `
+  <div class="v4">
+    <header class="v4-top rise">
+      <div><div class="v4-brand"><span class="mark">۞</span> QURAN MEMORISER</div><div class="v4-sub">Ledger — Black · Neutral Gray · Carmine Red (Wada 221)</div></div>
+      ${chipRow("v4")}
+    </header>
+    <main class="v4-main">
+      <div class="v4-filters rise-1">${filters("v4")}</div>
+      <div class="v4-list rise-2">${rows}</div>
+      <section class="v4-sec">
+        <a class="v4-crumb" href="#" onclick="return false">← ALL CHAPTERS</a>
+        <div class="v4-chhead rise-3">
+          <div class="v4-chhead-top">
+            <div class="v4-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="v4-rpill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="v4-chmeta" style="padding:0 18px 10px">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="v4-controls">
+            <button class="v4-btn p-playpart">▶ Play part</button>
+            <button class="v4-btn o">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader("v4")}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function filters(cls) {
+  const defs = [["all", "All"], ["done", "Memorised"], ["partial", "Partial"], ["next", "Next"], ["later", "Later"], ["unset", "Not set"]];
+  return defs.map(([id, label]) =>
+    `<button class="${cls}-filter p-filter" data-f="${id}" ${state.filter === id ? "data-active" : ""}>${label}</button>`).join("");
+}
+
+function verseRow(cls, v) {
+  const on = state.ticked[2].has(v.n);
+  return `
+  <div class="${cls}-verse ${on ? "mem" : ""}" data-v="${v.n}">
+    <div class="${cls}-vtop">
+      <button class="${cls}-vplay p-play" data-v="${v.n}" title="Play 2:${v.n}">▶</button>
+      <button class="${cls}-vtick p-tick" data-v="${v.n}" ${on ? "data-on" : ""} title="Mark memorised">✓</button>
+      <span class="${cls}-vref">2 : ${v.n}</span>
+    </div>
+    <div class="${cls}-var ar">${esc(v.ar)}</div>
+    <div class="${cls}-ven">${esc(v.en)}</div>
+  </div>`;
+}
+
+function partHeader(cls) {
+  const total = 14, done = state.ticked[2].size;
+  const on = done === total;
+  return `
+  <div class="${cls}-part">
+    <div><span class="no">Part 1 of 42</span><span class="range">verses 2:1–14 · 159 words</span><span class="cnt p-partcount">${done}/${total} verses ✓</span></div>
+    <div class="${cls}-partbtns">
+      <button class="${cls}-ptick p-parttick" ${on ? "data-on" : ""}>${on ? "✓ Memorised" : "Mark memorised"}</button>
+      <button class="${cls}-pplay p-playpart">▶ Play part</button>
+    </div>
+  </div>`;
+}
+
+/* ============ interactions (delegated, wired after each mount) ============ */
+
+let audio = null;
+function stopAudio() {
+  if (audio) { audio.pause(); audio = null; }
+  document.querySelectorAll(".playing").forEach((n) => n.classList.remove("playing"));
+}
+
+function playVerse(v) {
+  stopAudio();
+  audio = new Audio(audioUrl(v));
+  audio.addEventListener("ended", stopAudio);
+  audio.play().catch(() => {});
+  const row = document.querySelector(`.verse[data-v="${v}"], [class*="-verse"][data-v="${v}"]`);
+  if (row) row.classList.add("playing");
+}
+
+function wireInteractions(root) {
+  root.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.classList.contains("p-status")) {
+      const order = ["", "done", "partial", "next", "later"];
+      const ch = String(t.dataset.ch);
+      const next = order[(order.indexOf(t.dataset.status || "") + 1) % order.length];
+      state.status[ch] = next;
+      t.dataset.status = next;
+      t.textContent = statusInfo(next).label;
+      const card = root.querySelector(`[data-ch="${ch}"]`);
+      if (card && card !== t) card.dataset.status = next;
+      const chips = root.querySelector('[class*="-chips"]');
+      if (chips) chips.outerHTML = chipRow(chips.className.split("-")[0]);
+      return;
+    }
+    if (t.classList.contains("p-tick")) {
+      const v = +t.dataset.v;
+      const set = state.ticked[2];
+      if (set.has(v)) { set.delete(v); t.removeAttribute("data-on"); }
+      else { set.add(v); t.setAttribute("data-on", ""); }
+      const row = t.closest('[class*="-verse"]');
+      if (row) row.classList.toggle("mem", set.has(v));
+      const cnt = root.querySelector(".p-partcount");
+      if (cnt) cnt.textContent = `${set.size}/14 verses ✓`;
+      const ptick = root.querySelector(".p-parttick");
+      if (ptick) {
+        const on = set.size === 14;
+        ptick.toggleAttribute("data-on", on);
+        ptick.textContent = on ? "✓ Memorised" : "Mark memorised";
+      }
+      return;
+    }
+    if (t.classList.contains("p-parttick")) {
+      const set = state.ticked[2];
+      const on = set.size !== 14;
+      set.clear();
+      if (on) DATA.verses.forEach((v) => set.add(v.n));
+      root.querySelectorAll(".p-tick").forEach((b) => {
+        b.toggleAttribute("data-on", set.has(+b.dataset.v));
+        const row = b.closest('[class*="-verse"]');
+        if (row) row.classList.toggle("mem", set.has(+b.dataset.v));
+      });
+      const cnt = root.querySelector(".p-partcount");
+      if (cnt) cnt.textContent = `${set.size}/14 verses ✓`;
+      t.toggleAttribute("data-on", set.size === 14);
+      t.textContent = set.size === 14 ? "✓ Memorised" : "Mark memorised";
+      return;
+    }
+    if (t.classList.contains("p-play")) { playVerse(+t.dataset.v); return; }
+    if (t.classList.contains("p-playpart")) {
+      stopAudio();
+      const order = [...DATA.verses.map((v) => v.n)];
+      let i = 0;
+      const playNext = () => {
+        if (i >= order.length) return stopAudio();
+        const v = order[i++];
+        stopAudio();
+        audio = new Audio(audioUrl(v));
+        audio.addEventListener("ended", playNext);
+        audio.play().catch(() => {});
+        const row = document.querySelector(`[class*="-verse"][data-v="${v}"]`);
+        if (row) { document.querySelectorAll(".playing").forEach((n) => n.classList.remove("playing")); row.classList.add("playing"); }
+      };
+      playNext();
+      return;
+    }
+    if (t.classList.contains("p-filter")) {
+      state.filter = t.dataset.f;
+      remount();
+    }
+  });
+}
+
+const variants = [renderWashi, renderNight, renderKacho, renderLedger];
+const stage = document.getElementById("stage");
+const picker = document.querySelector(".proto-picker");
+const highlight = picker.querySelector(".proto-picker-highlight");
+const allItems = [...picker.querySelectorAll(".proto-picker-item")].filter((b) => !b.classList.contains("proto-picker-replay"));
+const replayBtn = picker.querySelector(".proto-picker-replay");
+let current = 0;
+let wired = false;
+
+function moveHighlight() {
+  const el = allItems[current];
+  highlight.style.width = el.offsetWidth + "px";
+  highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+}
+
+function remount() {
+  stage.innerHTML = "";
+  requestAnimationFrame(() => {
+    state = freshState();
+    const html = variants[current]();
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+    const node = holder.firstElementChild;
+    stage.appendChild(node);
+    if (!wired) { wireInteractions(stage); wired = true; }
+  });
+}
+
+function setActive(i) {
+  if (i < 0 || i >= variants.length) return;
+  current = i;
+  allItems.forEach((el, j) => {
+    el.toggleAttribute("data-active", j === i);
+    if (j === i) el.setAttribute("aria-current", "true");
+    else el.removeAttribute("aria-current");
+  });
+  moveHighlight();
+  try {
+    const url = new URL(location);
+    url.searchParams.set("v", i + 1);
+    history.replaceState(null, "", url);
+  } catch {}
+  remount();
+}
+
+allItems.forEach((el, i) => el.addEventListener("click", () => setActive(i)));
+replayBtn?.addEventListener("click", () => remount());
+window.addEventListener("resize", moveHighlight);
+
+document.addEventListener("keydown", (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = parseInt(e.key, 10);
+  if (num >= 1 && num <= variants.length) setActive(num - 1);
+  else if (e.key === "ArrowRight") setActive((current + 1) % variants.length);
+  else if (e.key === "ArrowLeft") setActive((current - 1 + variants.length) % variants.length);
+  else if (e.key === "r" || e.key === "R") remount();
+});
+
+setActive((parseInt(new URLSearchParams(location.search).get("v"), 10) || 1) - 1);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute("data-ready", "")));
+</script>
+</body>
+</html>
