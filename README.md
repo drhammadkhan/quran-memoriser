@@ -2,6 +2,8 @@
 
 A local web app for tracking Quran memorisation, built on alislam.org's Quran assets.
 
+**Live:** https://drhammadkhan.github.io/quran-memoriser/ — open on your phone and Add to Home Screen to install it as a fully offline app.
+
 ## Run it
 
 ```bash
