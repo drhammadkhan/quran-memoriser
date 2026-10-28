@@ -36,6 +36,7 @@
     currentCh: null,
     currentV: null,
     objectUrl: null,
+    gapTimer: null,
   };
 
   // Chapter statuses, stored with timestamps for cross-device merging:
@@ -511,6 +512,7 @@
 
   function stopPlayback() {
     detachAudio();
+    if (player.gapTimer) { clearTimeout(player.gapTimer); player.gapTimer = null; }
     player.continuous = false;
     player.chapter = null;
     player.verseIndex = -1;
@@ -592,13 +594,110 @@
     if (player.repeatLeft > 1) {
       player.repeatLeft -= 1;
       const cur = data.verses[player.verseIndex];
-      if (cur) return playVerse(player.chapter, cur.n, { continuous: true });
+      if (!cur) return stopPlayback();
+      const gap = parseInt(prefs.get("repeatGap", "0"), 10) || 0;
+      if (gap > 0) {
+        // recite pause: silence after each replay so you can say the verse yourself
+        player.gapTimer = setTimeout(() => {
+          player.gapTimer = null;
+          if (player.continuous) playVerse(player.chapter, cur.n, { continuous: true });
+        }, gap * 1000);
+        return;
+      }
+      return playVerse(player.chapter, cur.n, { continuous: true });
     }
     player.verseIndex += 1;
     player.repeatLeft = repeats();
     const next = data.verses[player.verseIndex];
     if (!next || player.verseIndex > player.endIndex) return stopPlayback();
     playVerse(player.chapter, next.n, { continuous: true });
+  }
+
+  // ---------- practice mode (recall masking + letter hints) ----------
+  // practice = { on, from, to } — scoped to a verse range (part or chapter)
+  let practice = { on: false, from: null, to: null };
+
+  // Reduce each Arabic word to its first letter (with diacritics) + a tatweel,
+  // the classic hifz prompt between full text and blank. Verse-end markers
+  // (﴿١﴾ etc.) are dropped.
+  function firstLettersHint(ar) {
+    const isBase = (c) => {
+      const x = c.codePointAt(0);
+      return (x >= 0x0621 && x <= 0x064a) || (x >= 0x0671 && x <= 0x06d3) || x === 0x0640;
+    };
+    const isMark = (c) => {
+      const x = c.codePointAt(0);
+      return (x >= 0x064b && x <= 0x065f) || x === 0x0670 || (x >= 0x06d6 && x <= 0x06ed);
+    };
+    return ar
+      .split(/\s+/)
+      .map((word) => {
+        let out = "";
+        let started = false;
+        for (const ch of word) {
+          if (!started) {
+            if (isBase(ch)) { out += ch; started = true; }
+          } else if (isMark(ch)) {
+            out += ch;
+          } else {
+            break;
+          }
+        }
+        return started ? out + "ــ" : "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function buildMaskCover(row, v) {
+    const cover = el("div", "ar-mask");
+    const hintLevel = prefs.get("hintLevel", "hidden");
+    if (hintLevel === "letters") {
+      cover.append(el("span", "ar-mask-hint ar", esc(firstLettersHint(v.ar))));
+    } else {
+      cover.append(el("span", "ar-mask-label", "recite from memory — tap to check"));
+    }
+    cover.addEventListener("click", () => unmaskVerse(row));
+    return cover;
+  }
+
+  function maskVerse(row) {
+    if (row.classList.contains("masked")) return;
+    const v = { ar: row.dataset.ar };
+    row.classList.add("masked");
+    const ar = row.querySelector(".verse-ar");
+    ar.style.position = "relative";
+    ar.append(buildMaskCover(row, v));
+  }
+
+  function unmaskVerse(row) {
+    row.classList.remove("masked");
+    row.querySelector(".ar-mask")?.remove();
+  }
+
+  function applyPracticeToDom() {
+    const view = document.getElementById("view");
+    document.body.classList.toggle("practice", practice.on);
+    document.querySelectorAll(".verse").forEach((row) => {
+      const n = +row.dataset.v;
+      const inRange = practice.on && n >= practice.from && n <= practice.to;
+      if (inRange) maskVerse(row);
+      else unmaskVerse(row);
+    });
+    const btn = document.getElementById("practice-btn");
+    if (btn) {
+      btn.textContent = practice.on ? "✕ Exit practice" : "◔ Practice";
+      btn.classList.toggle("btn-ghost", !practice.on);
+    }
+    const tools = document.getElementById("practice-tools");
+    if (tools) tools.classList.toggle("hidden", !practice.on);
+  }
+
+  function remaskAll() {
+    document.querySelectorAll(".verse.masked").forEach((row) => {
+      unmaskVerse(row);
+      maskVerse(row);
+    });
   }
 
   // ---------- shared components ----------
@@ -783,6 +882,17 @@
     repeatSel.addEventListener("change", () => { prefs.set("repeats", repeatSel.value); player.repeatLeft = parseInt(repeatSel.value, 10); });
     repeatLabel.append(repeatSel);
 
+    const gapLabel = el("label", null, "Recite pause ");
+    const gapSel = el("select");
+    for (const g of [0, 2, 4, 6, 10]) {
+      const o = el("option", null, g === 0 ? "off" : g + "s");
+      o.value = g;
+      gapSel.append(o);
+    }
+    gapSel.value = prefs.get("repeatGap", "0");
+    gapSel.addEventListener("change", () => prefs.set("repeatGap", gapSel.value));
+    gapLabel.append(gapSel);
+
     const playBtn = el("button", "btn btn-play", "▶ Play chapter");
     playBtn.id = "play-chapter-btn";
     playBtn.addEventListener("click", () => {
@@ -796,8 +906,36 @@
       wordsBtn.classList.toggle("on", document.body.classList.contains("show-words"));
     });
 
-    controls.append(reciterLabel, repeatLabel, playBtn, wordsBtn);
-    head.append(controls);
+    // practice: hide the Arabic so you recite from memory, then tap to check
+    practice = { on: false, from: null, to: null };
+    const practiceBtn = el("button", "btn btn-ghost", "◔ Practice");
+    practiceBtn.id = "practice-btn";
+    practiceBtn.addEventListener("click", () => {
+      practice = practice.on
+        ? { on: false, from: null, to: null }
+        : { on: true, from: data.verses[0].n, to: data.verses[data.verses.length - 1].n };
+      applyPracticeToDom();
+    });
+
+    const practiceTools = el("div", "practice-tools hidden");
+    practiceTools.id = "practice-tools";
+    const hintLabel = el("span", "label", "Prompt:");
+    const mkHint = (id, label) => {
+      const b = el("button", "filter-btn" + (prefs.get("hintLevel", "hidden") === id ? " active" : ""), label);
+      b.addEventListener("click", () => {
+        prefs.set("hintLevel", id);
+        practiceTools.querySelectorAll(".filter-btn").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        remaskAll();
+      });
+      return b;
+    };
+    const resetMasks = el("button", "filter-btn", "Reset masks");
+    resetMasks.addEventListener("click", remaskAll);
+    practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("letters", "First letters"), resetMasks);
+
+    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, wordsBtn, practiceBtn);
+    head.append(controls, practiceTools);
 
     // Memorisation parts (long surahs only): a strip of chips plus a tick per part.
     // Display state always derives from verse ticks so parts and verses agree.
@@ -928,7 +1066,13 @@
           }
           startContinuous(ch, p.start, p.end);
         });
-        actions.append(tick, playPart);
+        const practicePart = el("button", "part-play", "◔ Practice part");
+        practicePart.addEventListener("click", () => {
+          practice = { on: true, from: p.from, to: p.to };
+          applyPracticeToDom();
+          ph.scrollIntoView({ block: "start", behavior: "smooth" });
+        });
+        actions.append(tick, playPart, practicePart);
         ph.append(label, actions);
         view.append(ph);
       }
@@ -936,6 +1080,7 @@
       const row = el("div", "verse");
       row.dataset.v = v.n;
       row.dataset.ch = ch;
+      row.dataset.ar = v.ar;
       if (verseStore.get(ch, v.n)) row.classList.add("memorised");
 
       const top = el("div", "verse-top");
@@ -950,7 +1095,17 @@
           stopPlayback();
           return;
         }
-        playVerse(ch, v.n);
+        // a single-verse drill session: honours Repeat ×N and the recite pause
+        player.chapter = ch;
+        player.verseIndex = idx;
+        player.endIndex = idx;
+        player.repeatLeft = repeats();
+        playVerse(ch, v.n, { continuous: true });
+        const chapterBtn = document.getElementById("play-chapter-btn");
+        if (chapterBtn) {
+          chapterBtn.textContent = "■ Stop";
+          chapterBtn.classList.replace("btn-play", "btn-stop");
+        }
         play.classList.add("loading");
         const clear = () => play.classList.remove("loading");
         if (player.audio) { player.audio.addEventListener("playing", clear, { once: true }); player.audio.addEventListener("error", clear, { once: true }); }

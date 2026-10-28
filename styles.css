@@ -621,6 +621,56 @@ body.show-words .verse-words { display: block; }
 
 .error-note a { color: var(--blue); }
 
+.hidden { display: none !important; }
+
+/* ---------- practice mode (recall masking) ---------- */
+
+.practice-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.practice-tools .label { font-size: 12.5px; color: var(--muted); }
+
+.ar-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--band);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ar-mask-label {
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ar-mask-hint {
+  font-size: 30px;
+  line-height: 2.15;
+  color: var(--ink);
+  opacity: 0.85;
+}
+
+.verse.masked .verse-ar { min-height: 52px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .ar-mask:hover { border-color: var(--accent); }
+}
+
 /* ---------- offline audio panel ---------- */
 
 .topbar-btn {
@@ -767,4 +817,9 @@ body.show-words .verse-words { display: block; }
   .verse-ar { font-size: 25px; line-height: 1.95; }
   .verse-en { font-size: 14px; }
   .verse-words { font-size: 11.5px; margin: 0 -12px -10px; padding: 7px 12px; }
+
+  .practice-tools { gap: 5px; margin-top: 8px; padding-top: 8px; }
+  .practice-tools .filter-btn { padding: 4px 9px; font-size: 11px; }
+  .ar-mask-hint { font-size: 25px; line-height: 1.95; }
+  .ar-mask-label { font-size: 10px; }
 }
