@@ -64,7 +64,6 @@
       const m = this.readRaw();
       if (val) m[ch] = { s: val, t: Date.now() }; else delete m[ch];
       this.writeRaw(m);
-      scheduleSyncPush();
       return val;
     },
     cycle(ch) {
@@ -74,38 +73,17 @@
     },
   };
 
-  // ---------- cross-device sync (GitHub private repo as the store) ----------
-  // Devices link once with a fine-grained token scoped to this one repo.
-  // Merge rule: per key, the entry with the larger |timestamp| wins
-  // (negative timestamps are un-tick tombstones).
-  const syncManager = {
-    cfgKey: "qm.sync.v1",
-    api: "https://api.github.com",
-    owner: "drhammadkhan",
-    repo: "quran-sync",
-    path: "state.json",
-    cfg() {
-      try { return JSON.parse(localStorage.getItem(this.cfgKey)) || null; } catch { return null; }
+  // ---------- export / import snapshot ----------
+  // Snapshots carry timestamps, so importing always merges: the newer state
+  // of each chapter status / verse tick wins. Un-ticks are tombstones.
+  const snapshots = {
+    build() {
+      return {
+        app: "quran-memoriser", v: 1, exportedAt: new Date().toISOString(),
+        status: statusStore.readRaw(), verses: verseStore.readAllRaw(),
+      };
     },
-    saveCfg(c) { localStorage.setItem(this.cfgKey, JSON.stringify(c)); },
-    linked() { return !!this.cfg()?.token; },
-    async gh(path, opts = {}) {
-      const c = this.cfg();
-      if (!c?.token) throw new Error("Not linked");
-      const r = await fetch(this.api + path, {
-        ...opts,
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: "Bearer " + c.token,
-          "Content-Type": "application/json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          ...(opts.headers || {}),
-        },
-      });
-      if (!r.ok) throw new Error("GitHub " + r.status + (r.status === 401 ? " (token rejected)" : r.status === 409 ? " (conflict, retrying helps)" : ""));
-      return r.status === 204 ? null : r.json();
-    },
-    mergeInto(localRaw, remoteRaw) {
+    mergeInto(localRaw, snapRaw) {
       const pick = (a = {}, b = {}) => {
         const out = { ...a };
         for (const [k, bv] of Object.entries(b)) {
@@ -115,167 +93,83 @@
         return out;
       };
       const status = {}, verses = {};
-      const allCh = new Set([...Object.keys(localRaw.status || {}), ...Object.keys(remoteRaw.status || {})]);
-      for (const ch of allCh) {
-        const m = pick(localRaw.status?.[ch], remoteRaw.status?.[ch]);
+      const chs = new Set([...Object.keys(localRaw.status || {}), ...Object.keys(snapRaw.status || {})]);
+      for (const ch of chs) {
+        const m = pick(localRaw.status?.[ch], snapRaw.status?.[ch]);
         if (Object.keys(m).length) status[ch] = m;
       }
-      const allVCh = new Set([...Object.keys(localRaw.verses || {}), ...Object.keys(remoteRaw.verses || {})]);
-      for (const ch of allVCh) {
-        const m = pick(localRaw.verses?.[ch], remoteRaw.verses?.[ch]);
+      const vchs = new Set([...Object.keys(localRaw.verses || {}), ...Object.keys(snapRaw.verses || {})]);
+      for (const ch of vchs) {
+        const m = pick(localRaw.verses?.[ch], snapRaw.verses?.[ch]);
         if (Object.keys(m).length) verses[ch] = m;
       }
       return { status, verses };
     },
-    async syncNow() {
-      const c = this.cfg();
-      if (!c?.token) throw new Error("Not linked");
-      let remote = { status: {}, verses: {} }, sha = null;
-      try {
-        const f = await this.gh(`/repos/${this.owner}/${this.repo}/contents/${this.path}`);
-        sha = f.sha;
-        remote = JSON.parse(atob((f.content || "").replace(/\n/g, "")));
-      } catch (e) { /* 404 = fresh file */ }
+    apply(snap) {
       const merged = this.mergeInto(
         { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
-        { status: remote.status || {}, verses: remote.verses || {} }
+        { status: snap.status || {}, verses: snap.verses || {} }
       );
       statusStore.writeRaw(merged.status);
       verseStore.writeAllRaw(merged.verses);
-      const payload = {
-        app: "quran-memoriser", v: 1, updatedAt: Date.now(),
-        device: c.device || "unknown",
-        status: merged.status, verses: merged.verses,
-      };
-      const body = {
-        message: "sync " + new Date().toISOString(),
-        content: btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
-      };
-      if (sha) body.sha = sha;
-      await this.gh(`/repos/${this.owner}/${this.repo}/contents/${this.path}`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      });
-      c.device = c.device || Math.random().toString(36).slice(2, 8);
-      c.lastSync = Date.now();
-      this.saveCfg(c);
-      return true;
     },
   };
 
-  let syncPushTimer = null;
-  function scheduleSyncPush() {
-    if (!syncManager.linked()) return;
-    clearTimeout(syncPushTimer);
-    syncPushTimer = setTimeout(() => syncManager.syncNow().catch(() => {}), 4000);
-  }
-
-  function renderSyncPanel() {
-    const existing = document.getElementById("sync-panel");
+  function renderExportPanel() {
+    const existing = document.getElementById("export-panel");
     if (existing) { existing.remove(); return; }
     const overlay = el("div", "modal-overlay");
-    overlay.id = "sync-panel";
+    overlay.id = "export-panel";
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
     const card = el("div", "modal-card");
     const close = el("button", "modal-close", "✕");
     close.addEventListener("click", () => overlay.remove());
-    card.append(el("h2", "modal-title", "Sync across devices"), close);
+    card.append(el("h2", "modal-title", "Backup & transfer"), close);
+    card.append(el("div", "modal-note",
+      "Move your progress between devices: export a snapshot on one, import it on the other. " +
+      "Importing merges — the newer state of each chapter and verse wins, and un-ticks carry over."));
 
-    const cfg = syncManager.cfg();
-    const paint = () => {
-      card.querySelectorAll(".sync-body").forEach((n) => n.remove());
-      const body = el("div", "sync-body");
-      if (!syncManager.linked()) {
-        body.append(el("div", "modal-note",
-          "Progress is stored in a private GitHub repo of yours (<b>drhammadkhan/quran-sync</b>). " +
-          "Link each device once with a token that can only read and write that one repository."));
-        const steps = el("div", "modal-note",
-          `<b>1.</b> Create the token (already scoped to the repo):<br/>
-           <a href="https://github.com/settings/personal-access-tokens/new?repo_id=1437042383&repository_permissions=contents" target="_blank" rel="noopener">github.com → new fine-grained token</a><br/>
-           <b>2.</b> Generate it, copy the value (starts <code>github_pat_…</code>)<br/>
-           <b>3.</b> Paste it below on this device.`);
-        steps.style.lineHeight = "1.8";
-        const input = el("input");
-        input.type = "password";
-        input.placeholder = "github_pat_…";
-        input.autocomplete = "off";
-        input.style.cssText = "width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:13px;margin:10px 0";
-        const linkBtn = el("button", "btn btn-play", "Link this device");
-        const msg = el("div", "reciter-status");
-        linkBtn.addEventListener("click", async () => {
-          const token = input.value.trim();
-          if (!token) return;
-          linkBtn.textContent = "Linking…";
-          try {
-            syncManager.saveCfg({ token, lastSync: 0 });
-            await syncManager.gh(`/repos/${syncManager.owner}/${syncManager.repo}`);
-            await syncManager.syncNow();
-            route(); // pull may have changed visible state
-            paint();
-          } catch (e) {
-            syncManager.saveCfg({});
-            linkBtn.textContent = "Link this device";
-            msg.textContent = "Couldn't link: " + e.message;
-          }
-        });
-        body.append(steps, input, linkBtn, msg);
+    const row = el("div", "reciter-actions");
+    row.style.margin = "12px 0";
+
+    const shareBtn = el("button", "btn btn-play", "⇪ Share snapshot file");
+    shareBtn.addEventListener("click", async () => {
+      const data = JSON.stringify(snapshots.build(), null, 1);
+      const file = new File([data], "quran-memoriser-backup.json", { type: "application/json" });
+      if (navigator.canShare?.({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: "Quran Memoriser backup" }); } catch {}
       } else {
-        const last = cfg?.lastSync ? new Date(cfg.lastSync).toLocaleString() : "never";
-        const info = el("div", "storage-line", "✓ Linked · last synced " + last + (cfg.device ? " · device " + cfg.device : ""));
-        const row = el("div", "reciter-actions");
-        row.style.margin = "12px 0";
-        const nowBtn = el("button", "btn btn-play", "⟳ Sync now");
-        const msg = el("span", "reciter-status");
-        nowBtn.addEventListener("click", async () => {
-          nowBtn.textContent = "Syncing…";
-          try { await syncManager.syncNow(); route(); paint(); }
-          catch (e) { nowBtn.textContent = "⟳ Sync now"; msg.textContent = e.message; }
-        });
-        const unlink = el("button", "btn btn-ghost", "Unlink");
-        unlink.addEventListener("click", () => {
-          syncManager.saveCfg({});
-          paint();
-        });
-        row.append(nowBtn, unlink, msg);
-        body.append(info, row);
-
-        // snapshot export / import (offline fallback)
-        const snapTitle = el("div", "modal-title", "");
-        snapTitle.style.fontSize = "15px";
-        snapTitle.textContent = "Snapshot (manual backup)";
-        const snapRow = el("div", "reciter-actions");
-        const copyBtn = el("button", "btn btn-ghost", "Copy snapshot");
-        copyBtn.addEventListener("click", async () => {
-          const payload = { app: "quran-memoriser", v: 1, exportedAt: Date.now(),
-            status: statusStore.readRaw(), verses: verseStore.readAllRaw() };
-          try { await navigator.clipboard.writeText(JSON.stringify(payload)); copyBtn.textContent = "Copied ✓"; }
-          catch { copyBtn.textContent = "Copy failed — use the box below"; }
-          setTimeout(() => (copyBtn.textContent = "Copy snapshot"), 2000);
-        });
-        snapRow.append(copyBtn);
-        const area = el("textarea");
-        area.placeholder = "…or paste a snapshot here and press Import";
-        area.style.cssText = "width:100%;height:64px;margin:10px 0;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:12px";
-        const importBtn = el("button", "btn btn-ghost", "Import snapshot");
-        importBtn.addEventListener("click", () => {
-          try {
-            const parsed = JSON.parse(area.value);
-            const merged = syncManager.mergeInto(
-              { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
-              { status: parsed.status || {}, verses: parsed.verses || {} }
-            );
-            statusStore.writeRaw(merged.status);
-            verseStore.writeAllRaw(merged.verses);
-            route();
-            importBtn.textContent = "Imported ✓";
-            setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000);
-          } catch { importBtn.textContent = "Invalid snapshot"; setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000); }
-        });
-        body.append(snapTitle, snapRow, area, importBtn);
+        shareBtn.textContent = "Sharing unsupported — use Copy";
       }
-      card.append(body);
-    };
-    paint();
+    });
+
+    const copyBtn = el("button", "btn btn-ghost", "Copy to clipboard");
+    copyBtn.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(JSON.stringify(snapshots.build())); copyBtn.textContent = "Copied ✓"; }
+      catch { copyBtn.textContent = "Copy failed — use the box below"; }
+      setTimeout(() => (copyBtn.textContent = "Copy to clipboard"), 2000);
+    });
+    row.append(shareBtn, copyBtn);
+    card.append(row);
+
+    card.append(el("div", "modal-note", "…or paste a snapshot here:"));
+    const area = el("textarea");
+    area.placeholder = '{"app":"quran-memoriser", …}';
+    area.style.cssText = "width:100%;height:84px;margin:8px 0;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:12px";
+    const importBtn = el("button", "btn btn-play", "Import snapshot");
+    importBtn.addEventListener("click", () => {
+      try {
+        snapshots.apply(JSON.parse(area.value));
+        route();
+        renderChips();
+        importBtn.textContent = "Imported ✓";
+      } catch {
+        importBtn.textContent = "Invalid snapshot";
+      }
+      setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000);
+    });
+    card.append(area, importBtn);
+
     overlay.append(card);
     document.body.append(overlay);
   }
@@ -350,7 +244,6 @@
       m[v] = on ? Date.now() : -Date.now();
       all[ch] = m;
       this.writeAllRaw(all);
-      scheduleSyncPush();
     },
     count(ch) { return Object.values(this.readAllRaw()[ch] || {}).filter((t) => t >= 0).length; },
   };
@@ -1135,10 +1028,10 @@
   // ---------- boot ----------
   themeManager.apply();
   document.getElementById("theme-btn")?.addEventListener("click", () => themeManager.cycle());
-  document.getElementById("sync-btn")?.addEventListener("click", renderSyncPanel);
+  document.getElementById("export-btn")?.addEventListener("click", renderExportPanel);
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
-  window.__qm = { resolveAudioUrl, syncManager, statusStore, verseStore }; // debug/verification hook
+  window.__qm = { statusStore, verseStore }; // debug/verification hook
 
   // Service worker makes the app installable and fully offline (needs a
   // secure context: https or localhost — silently skipped on plain LAN IPs).
@@ -1146,20 +1039,10 @@
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
-  // returning to the app (e.g. phone unlock) pulls the latest state
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && syncManager.linked()) {
-      syncManager.syncNow().then(() => { renderChips(); route(); }).catch(() => {});
-    }
-  });
-
   fetch("data/surahs.json")
     .then((r) => r.json())
-    .then(async (list) => {
+    .then((list) => {
       surahs = list;
-      if (syncManager.linked()) {
-        try { await syncManager.syncNow(); } catch {} // best-effort pull before first paint
-      }
       renderChips();
       route();
     })
