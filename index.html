@@ -11,6 +11,18 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Quran" />
+  <script>
+    // set theme before first paint to avoid a flash of the wrong scheme
+    (function () {
+      try {
+        var m = localStorage.getItem("qm.theme.v1") || "auto";
+        var dark = m === "dark" || (m === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        var t = document.querySelector('meta[name="theme-color"]');
+        if (t) t.content = dark ? "#201b16" : "#f9f3e1";
+      } catch (e) {}
+    })();
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>" />
 </head>
 <body>
@@ -22,6 +34,7 @@
         <span class="brand-sub">Text &amp; audio from alislam.org · Sher Ali translation</span>
       </span>
     </a>
+    <button id="theme-btn" class="topbar-btn" title="Theme: Auto → Light → Night">◐ Auto</button>
     <button id="offline-audio-btn" class="topbar-btn" title="Download reciter audio for offline playback">⤓ Offline audio</button>
     <div id="progress-chips" class="progress-chips"></div>
   </header>

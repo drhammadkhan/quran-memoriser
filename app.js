@@ -862,7 +862,39 @@
   window.addEventListener("hashchange", route);
   window.addEventListener("beforeunload", stopPlayback);
 
+  // ---------- theme (Auto / Light / Night) ----------
+  const themeManager = {
+    key: "qm.theme.v1",
+    modes: ["auto", "light", "dark"],
+    labels: { auto: "◐ Auto", light: "☀ Light", dark: "☾ Night" },
+    get() {
+      const m = localStorage.getItem(this.key);
+      return this.modes.includes(m) ? m : "auto";
+    },
+    resolved() {
+      const mode = this.get();
+      return mode === "dark" || (mode === "auto" && matchMedia("(prefers-color-scheme: dark)").matches)
+        ? "dark" : "light";
+    },
+    apply() {
+      const dark = this.resolved() === "dark";
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = dark ? "#201b16" : "#f9f3e1";
+      const btn = document.getElementById("theme-btn");
+      if (btn) btn.textContent = this.labels[this.get()];
+    },
+    cycle() {
+      const order = this.modes;
+      localStorage.setItem(this.key, order[(order.indexOf(this.get()) + 1) % order.length]);
+      this.apply();
+    },
+  };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => themeManager.apply());
+
   // ---------- boot ----------
+  themeManager.apply();
+  document.getElementById("theme-btn")?.addEventListener("click", () => themeManager.cycle());
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
   window.__qm = { resolveAudioUrl }; // small debug/verification hook
