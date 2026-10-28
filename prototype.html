@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Quran Memoriser — design variants</title>
+<style>
+@font-face { font-family: "ManzoorNaskh"; src: url("assets/ManzoorNaskh.ttf") format("truetype"); font-display: swap; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+#stage > div { min-height: 100vh; }
+.ar { font-family: "ManzoorNaskh", serif; direction: rtl; }
+
+/* ============ shared wiring bits ============ */
+.hidden { display: none !important; }
+
+/* ============ R1 HANKO — solid stamp pills (Washi light, bold fills) ============ */
+.h1 { background: #f6efdc; color: #232019; padding-bottom: 80px; }
+.h1-serif { font-family: Georgia, "Times New Roman", serif; }
+.h1-top { background: #f9f3e1; border-bottom: 1px solid #e0d4b4; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.h1-brand { font-family: Georgia, serif; font-size: 21px; font-weight: 700; }
+.h1-brand .mark { color: #d96629; margin-right: 8px; }
+.h1-sub { font-size: 11.5px; color: #7a7160; margin-top: 2px; }
+.h1-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.h1-chip { border: 1px solid #ddcfab; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #5d5647; background: #fcf7e9; }
+.h1-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.h1-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.h1-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.h1-filter { border: 1px solid #c9b98d; background: transparent; border-radius: 4px; padding: 5px 13px; font-size: 12px; color: #5d5647; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; }
+.h1-filter[data-active] { background: #232019; color: #f6efdc; border-color: #232019; }
+.h1-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.h1-card { border: 1px solid #e0d4b4; border-radius: 10px; padding: 13px 15px 11px; background: #fcf7e9; cursor: pointer; border-left-width: 4px; border-left-color: #e0d4b4; }
+.h1-card[data-status=done] { border-left-color: #437742; }
+.h1-card[data-status=next] { border-left-color: #d96629; }
+.h1-card[data-status=partial] { border-left-color: #f27291; }
+.h1-card[data-status=later] { border-left-color: #5a82b3; }
+.h1-card-top { display: flex; justify-content: space-between; align-items: center; }
+.h1-num { width: 27px; height: 27px; border-radius: 50%; border: 1px solid #c9b98d; color: #5d5647; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.h1-cardar { font-size: 19px; color: #232019; }
+.h1-name { font-size: 17px; font-weight: 700; margin-top: 6px; }
+.h1-meta { font-size: 12px; color: #7a7160; margin-top: 2px; }
+.h1-meta .tick { color: #437742; font-weight: 700; }
+.h1-pill { margin-top: 9px; border: none; background: #8d8267; color: #fcf7e9; border-radius: 4px; padding: 4px 11px; font-size: 11px; letter-spacing: 0.6px; cursor: pointer; text-transform: uppercase; font-family: inherit; font-weight: 700; }
+.h1-pill[data-status=done] { background: #437742; }
+.h1-pill[data-status=next] { background: #d96629; }
+.h1-pill[data-status=partial] { background: #c04a68; }
+.h1-pill[data-status=later] { background: #5a82b3; }
+.h1-sec { margin-top: 42px; }
+.h1-crumb { color: #7a7160; font-size: 13px; text-decoration: none; }
+.h1-chhead { border: 1px solid #e0d4b4; background: #fcf7e9; border-radius: 10px; padding: 18px 20px; }
+.h1-chtitle { font-family: Georgia, serif; font-size: 24px; }
+.h1-chtitle .ar { font-size: 27px; color: #232019; margin-left: 12px; }
+.h1-chmeta { font-size: 12.5px; color: #7a7160; margin-top: 4px; }
+.h1-chmeta b { color: #437742; }
+.h1-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.h1-btn { border: none; background: #232019; color: #f6efdc; border-radius: 4px; padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700; }
+.h1-btn.o { background: transparent; color: #232019; border: 1px solid #c9b98d; }
+.h1-part { margin: 20px 0 12px; padding: 10px 16px; border-left: 3px solid #d96629; background: #f3ead2; border-radius: 0 8px 8px 0; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.h1-part .no { font-weight: 700; }
+.h1-part .range { font-size: 12.5px; color: #5d5647; margin-left: 10px; }
+.h1-part .cnt { font-size: 12.5px; color: #437742; font-weight: 700; margin-left: 10px; }
+.h1-partbtns { display: flex; gap: 7px; }
+.h1-ptick { border: none; background: #437742; color: #fcf7e9; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; font-weight: 700; }
+.h1-ptick:not([data-on]) { background: transparent; color: #437742; border: 1px solid #437742; }
+.h1-pplay { border: none; background: #232019; color: #f6efdc; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; letter-spacing: 0.4px; text-transform: uppercase; font-weight: 700; }
+.h1-verse { background: #fcf7e9; border: 1px solid #e6dab9; border-radius: 10px; padding: 15px 18px; margin-bottom: 9px; }
+.h1-verse.mem { border-left: 3px solid #437742; }
+.h1-vtop { display: flex; align-items: center; gap: 9px; }
+.h1-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; cursor: pointer; color: #5d5647; font-size: 12px; font-family: inherit; }
+.h1-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; color: #cfc4a2; cursor: pointer; font-size: 13px; font-family: inherit; }
+.h1-vtick[data-on] { background: #437742; border-color: #437742; color: #fcf7e9; }
+.h1-vref { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #a08c5f; }
+.h1-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #1d1a13; }
+.h1-ven { font-size: 15px; color: #4a4436; line-height: 1.55; }
+.h1-verse.playing { box-shadow: 0 0 0 2px #d96629; }
+
+/* ============ R2 NISHIKI — full colour washes + solid pills (boldest light) ============ */
+.n2 { background: #f8f2e2; color: #232019; padding-bottom: 80px; }
+.n2-top { background: #232019; color: #f6efdc; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.n2-brand { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: #f6efdc; }
+.n2-brand .mark { color: #ebd3a2; margin-right: 8px; }
+.n2-sub { font-size: 11.5px; color: #bfb69c; margin-top: 2px; }
+.n2-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.n2-chip { border: 1px solid #4a4436; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #d9cfb4; background: #2e2a20; }
+.n2-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.n2-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.n2-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.n2-filter { border: 1px solid #c9b98d; background: transparent; color: #5d5647; border-radius: 999px; padding: 5px 13px; font-size: 12px; cursor: pointer; font-family: inherit; }
+.n2-filter[data-active] { background: #232019; color: #f6efdc; border-color: #232019; }
+.n2-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.n2-card { border: none; border-radius: 12px; padding: 14px 15px 12px; cursor: pointer; background: #fcf7e9; }
+.n2-card[data-status=done] { background: linear-gradient(150deg, #dfeacf, #eef3e3 70%); }
+.n2-card[data-status=next] { background: linear-gradient(150deg, #f6d9c4, #f9e9db 70%); }
+.n2-card[data-status=partial] { background: linear-gradient(150deg, #f4d4dd, #f9e8ec 70%); }
+.n2-card[data-status=later] { background: linear-gradient(150deg, #d5e0f0, #e9eff7 70%); }
+.n2-card-top { display: flex; justify-content: space-between; align-items: center; }
+.n2-num { width: 27px; height: 27px; border-radius: 50%; background: #232019; color: #f6efdc; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.n2-cardar { font-size: 19px; color: #3a3527; }
+.n2-name { font-family: Georgia, serif; font-size: 17px; font-weight: 700; margin-top: 6px; }
+.n2-meta { font-size: 12px; color: #6d6450; margin-top: 2px; }
+.n2-meta .tick { color: #35603a; font-weight: 700; }
+.n2-pill { margin-top: 9px; border: none; background: #8d8267; color: #fcf7e9; border-radius: 999px; padding: 4px 12px; font-size: 11px; letter-spacing: 0.4px; cursor: pointer; text-transform: uppercase; font-family: inherit; font-weight: 700; }
+.n2-pill[data-status=done] { background: #35603a; }
+.n2-pill[data-status=next] { background: #c25721; }
+.n2-pill[data-status=partial] { background: #b04a66; }
+.n2-pill[data-status=later] { background: #47699e; }
+.n2-sec { margin-top: 42px; }
+.n2-crumb { color: #7a7160; font-size: 13px; text-decoration: none; }
+.n2-chhead { border: 1px solid #e0d4b4; background: #fcf7e9; border-radius: 12px; padding: 18px 20px; }
+.n2-chtitle { font-family: Georgia, serif; font-size: 24px; }
+.n2-chtitle .ar { font-size: 27px; color: #232019; margin-left: 12px; }
+.n2-chmeta { font-size: 12.5px; color: #7a7160; margin-top: 4px; }
+.n2-chmeta b { color: #35603a; }
+.n2-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.n2-btn { border: none; background: #232019; color: #f6efdc; border-radius: 999px; padding: 8px 16px; font-size: 12.5px; cursor: pointer; font-family: inherit; font-weight: 700; }
+.n2-btn.o { background: transparent; color: #232019; border: 1px solid #c9b98d; }
+.n2-part { margin: 20px 0 12px; padding: 10px 16px; background: linear-gradient(90deg, #dfeacf, #f0f4e6); border-radius: 10px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.n2-part .no { font-weight: 800; color: #35603a; }
+.n2-part .range { font-size: 12.5px; color: #5d5647; margin-left: 10px; }
+.n2-part .cnt { font-size: 12.5px; color: #35603a; font-weight: 700; margin-left: 10px; }
+.n2-partbtns { display: flex; gap: 7px; }
+.n2-ptick { border: none; background: #35603a; color: #f2f6ec; border-radius: 999px; padding: 4px 11px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; font-weight: 700; }
+.n2-ptick:not([data-on]) { background: transparent; color: #35603a; border: 1px solid #35603a; }
+.n2-pplay { border: none; background: #232019; color: #f6efdc; border-radius: 999px; padding: 4px 11px; font-size: 11px; cursor: pointer; font-family: inherit; letter-spacing: 0.4px; text-transform: uppercase; font-weight: 700; }
+.n2-verse { background: #fcf7e9; border: 1px solid #e6dab9; border-radius: 12px; padding: 15px 18px; margin-bottom: 9px; }
+.n2-verse.mem { border: none; background: linear-gradient(150deg, #e6efda, #f2f6ec); }
+.n2-vtop { display: flex; align-items: center; gap: 9px; }
+.n2-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; cursor: pointer; color: #5d5647; font-size: 12px; font-family: inherit; }
+.n2-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #c9b98d; background: transparent; color: #cfc4a2; cursor: pointer; font-size: 13px; font-family: inherit; }
+.n2-vtick[data-on] { background: #35603a; border-color: #35603a; color: #f2f6ec; }
+.n2-vref { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #a08c5f; }
+.n2-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #1d1a13; }
+.n2-ven { font-size: 15px; color: #4a4436; line-height: 1.55; }
+.n2-verse.playing { box-shadow: 0 0 0 2px #c25721; }
+
+/* ============ R3 NIGHT INK — Washi after dark (warm black + cream + gold) ============ */
+.d3 { background: #191512; color: #ece4d0; padding-bottom: 80px; }
+.d3-top { background: #201b16; border-bottom: 1px solid #383025; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.d3-brand { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: #ece4d0; }
+.d3-brand .mark { color: #d9a05e; margin-right: 8px; }
+.d3-sub { font-size: 11.5px; color: #8f8267; margin-top: 2px; }
+.d3-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.d3-chip { border: 1px solid #383025; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #a99c7f; background: #201b16; }
+.d3-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.d3-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.d3-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.d3-filter { border: 1px solid #453b2c; background: transparent; color: #a99c7f; border-radius: 4px; padding: 5px 13px; font-size: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; }
+.d3-filter[data-active] { background: #ece4d0; color: #191512; border-color: #ece4d0; }
+.d3-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.d3-card { border: 1px solid #383025; border-radius: 10px; padding: 13px 15px 11px; background: #221c17; cursor: pointer; border-left-width: 4px; border-left-color: #383025; }
+.d3-card[data-status=done] { border-left-color: #7fb98a; }
+.d3-card[data-status=next] { border-left-color: #e08850; }
+.d3-card[data-status=partial] { border-left-color: #e39aa8; }
+.d3-card[data-status=later] { border-left-color: #8fa8d9; }
+.d3-card-top { display: flex; justify-content: space-between; align-items: center; }
+.d3-num { width: 27px; height: 27px; border-radius: 50%; border: 1px solid #574a35; color: #a99c7f; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.d3-cardar { font-size: 19px; color: #f0e6cc; }
+.d3-name { font-family: Georgia, serif; font-size: 17px; font-weight: 700; margin-top: 6px; color: #ece4d0; }
+.d3-meta { font-size: 12px; color: #8f8267; margin-top: 2px; }
+.d3-meta .tick { color: #7fb98a; font-weight: 700; }
+.d3-pill { margin-top: 9px; border: none; background: #574a35; color: #d9cfb4; border-radius: 4px; padding: 4px 11px; font-size: 11px; letter-spacing: 0.6px; cursor: pointer; text-transform: uppercase; font-family: inherit; font-weight: 700; }
+.d3-pill[data-status=done] { background: #2f5c3a; color: #cfeed6; }
+.d3-pill[data-status=next] { background: #8a4a22; color: #ffe3cc; }
+.d3-pill[data-status=partial] { background: #7a3a4e; color: #ffdbe3; }
+.d3-pill[data-status=later] { background: #35507e; color: #d9e4ff; }
+.d3-sec { margin-top: 42px; }
+.d3-crumb { color: #8f8267; font-size: 13px; text-decoration: none; }
+.d3-chhead { border: 1px solid #383025; background: #221c17; border-radius: 10px; padding: 18px 20px; }
+.d3-chtitle { font-family: Georgia, serif; font-size: 24px; color: #ece4d0; }
+.d3-chtitle .ar { font-size: 27px; color: #f0e6cc; margin-left: 12px; }
+.d3-chmeta { font-size: 12.5px; color: #8f8267; margin-top: 4px; }
+.d3-chmeta b { color: #7fb98a; }
+.d3-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.d3-btn { border: none; background: #ece4d0; color: #191512; border-radius: 4px; padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700; }
+.d3-btn.o { background: transparent; color: #ece4d0; border: 1px solid #574a35; }
+.d3-part { margin: 20px 0 12px; padding: 10px 16px; border-left: 3px solid #d9a05e; background: #26201a; border-radius: 0 8px 8px 0; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.d3-part .no { font-weight: 700; color: #d9a05e; }
+.d3-part .range { font-size: 12.5px; color: #a99c7f; margin-left: 10px; }
+.d3-part .cnt { font-size: 12.5px; color: #7fb98a; font-weight: 700; margin-left: 10px; }
+.d3-partbtns { display: flex; gap: 7px; }
+.d3-ptick { border: none; background: #2f5c3a; color: #cfeed6; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.4px; font-family: inherit; font-weight: 700; }
+.d3-ptick:not([data-on]) { background: transparent; color: #7fb98a; border: 1px solid #2f5c3a; }
+.d3-pplay { border: none; background: #d9a05e; color: #191512; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-family: inherit; letter-spacing: 0.4px; text-transform: uppercase; font-weight: 700; }
+.d3-verse { background: #221c17; border: 1px solid #383025; border-radius: 10px; padding: 15px 18px; margin-bottom: 9px; }
+.d3-verse.mem { border-left: 3px solid #7fb98a; background: #23231c; }
+.d3-vtop { display: flex; align-items: center; gap: 9px; }
+.d3-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #574a35; background: transparent; cursor: pointer; color: #d9a05e; font-size: 12px; font-family: inherit; }
+.d3-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #574a35; background: transparent; color: #4a4030; cursor: pointer; font-size: 13px; font-family: inherit; }
+.d3-vtick[data-on] { background: #2f5c3a; border-color: #7fb98a; color: #cfeed6; }
+.d3-vref { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: #8f8267; }
+.d3-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #f3e9cf; }
+.d3-ven { font-size: 15px; color: #c4b899; line-height: 1.55; }
+.d3-verse.playing { border-color: #d9a05e; box-shadow: 0 0 0 2px #d9a05e; }
+
+/* ============ R4 NIGHT INDIGO — deep indigo night (Wada #344/#211) ============ */
+.d4 { background: #081227; color: #e8ecf8; padding-bottom: 80px; }
+.d4-top { background: #0a1630; border-bottom: 1px solid #1d2d55; padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.d4-brand { font-size: 19px; font-weight: 700; color: #fdc57e; }
+.d4-brand .mark { color: #fdc57e; margin-right: 8px; }
+.d4-sub { font-size: 11.5px; color: #8fa0c8; margin-top: 2px; }
+.d4-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.d4-chip { background: rgba(253, 197, 126, 0.07); border: 1px solid #26385f; border-radius: 999px; padding: 4px 11px; font-size: 12px; color: #aab6d8; }
+.d4-chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.d4-main { max-width: 1080px; margin: 0 auto; padding: 26px 22px; }
+.d4-filters { display: flex; gap: 7px; margin-bottom: 20px; flex-wrap: wrap; }
+.d4-filter { border: 1px solid #26385f; background: transparent; color: #aab6d8; border-radius: 999px; padding: 5px 13px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+.d4-filter[data-active] { background: #fdc57e; color: #081227; border-color: #fdc57e; font-weight: 600; }
+.d4-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }
+.d4-card { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 13px 15px 11px; cursor: pointer; border-left: 4px solid #1d2d55; }
+.d4-card[data-status=done] { border-left-color: #7fd6ae; }
+.d4-card[data-status=next] { border-left-color: #f6a45c; }
+.d4-card[data-status=partial] { border-left-color: #f2a0be; }
+.d4-card[data-status=later] { border-left-color: #93b1f2; }
+.d4-card-top { display: flex; justify-content: space-between; align-items: center; }
+.d4-num { width: 27px; height: 27px; border-radius: 50%; border: 1px solid #3a4d7c; color: #aab6d8; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.d4-cardar { font-size: 19px; color: #f3e3bd; }
+.d4-name { font-size: 16.5px; font-weight: 700; margin-top: 6px; }
+.d4-meta { font-size: 12px; color: #8fa0c8; margin-top: 2px; }
+.d4-meta .tick { color: #7fd6ae; font-weight: 700; }
+.d4-pill { margin-top: 9px; border-radius: 999px; padding: 4px 12px; font-size: 11.5px; cursor: pointer; background: #2a3a63; border: none; color: #c3cdea; font-family: inherit; font-weight: 700; }
+.d4-pill[data-status=done] { background: #1f5c47; color: #c9f5df; }
+.d4-pill[data-status=next] { background: #7a4c2a; color: #ffe2c4; }
+.d4-pill[data-status=partial] { background: #6e3a55; color: #ffd9e6; }
+.d4-pill[data-status=later] { background: #33497e; color: #d4defc; }
+.d4-sec { margin-top: 42px; }
+.d4-crumb { color: #8fa0c8; font-size: 13px; text-decoration: none; }
+.d4-chhead { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 18px 20px; }
+.d4-chtitle { font-size: 23px; color: #fdc57e; }
+.d4-chtitle .ar { font-size: 27px; color: #f3e3bd; margin-left: 12px; }
+.d4-chmeta { font-size: 12.5px; color: #8fa0c8; margin-top: 4px; }
+.d4-chmeta b { color: #7fd6ae; }
+.d4-controls { display: flex; gap: 9px; margin-top: 13px; flex-wrap: wrap; align-items: center; }
+.d4-btn { border: none; background: #fdc57e; color: #081227; border-radius: 8px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.d4-btn.o { background: transparent; color: #e8ecf8; border: 1px solid #3a4d7c; font-weight: 400; }
+.d4-part { margin: 20px 0 12px; padding: 11px 16px; background: linear-gradient(90deg, rgba(253,197,126,0.12), rgba(253,197,126,0.03)); border: 1px solid #3d335c; border-radius: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.d4-part .no { font-weight: 700; color: #fdc57e; }
+.d4-part .range { font-size: 12.5px; color: #aab6d8; margin-left: 10px; }
+.d4-part .cnt { font-size: 12.5px; color: #7fd6ae; font-weight: 700; margin-left: 10px; }
+.d4-partbtns { display: flex; gap: 7px; }
+.d4-ptick { border: none; background: #1f5c47; color: #c9f5df; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer; font-family: inherit; font-weight: 700; }
+.d4-ptick:not([data-on]) { background: transparent; color: #7fd6ae; border: 1px solid #2f6b55; }
+.d4-pplay { border: 1px solid #fdc57e; color: #fdc57e; background: transparent; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; cursor: pointer; font-family: inherit; font-weight: 700; }
+.d4-verse { background: #0e1b3a; border: 1px solid #1d2d55; border-radius: 14px; padding: 15px 18px; margin-bottom: 10px; }
+.d4-verse.mem { border-left: 3px solid #7fd6ae; background: #0f2145; }
+.d4-vtop { display: flex; align-items: center; gap: 9px; }
+.d4-vplay { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #3a4d7c; background: transparent; color: #fdc57e; cursor: pointer; font-size: 12px; font-family: inherit; }
+.d4-vtick { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #3a4d7c; background: transparent; color: #43537d; cursor: pointer; font-size: 13px; font-family: inherit; }
+.d4-vtick[data-on] { background: #1f5c47; border-color: #7fd6ae; color: #c9f5df; }
+.d4-vref { font-size: 11px; letter-spacing: 1px; color: #6374a3; }
+.d4-var { font-size: 29px; line-height: 2.1; text-align: right; margin: 8px 0 2px; color: #f6e7c2; }
+.d4-ven { font-size: 15px; color: #b9c4e2; line-height: 1.55; }
+.d4-verse.playing { box-shadow: 0 0 0 2px #fdc57e, 0 0 24px rgba(253,197,126,0.25); }
+
+.rise { animation: protoRise 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rise-1 { animation-delay: 30ms; } .rise-2 { animation-delay: 60ms; } .rise-3 { animation-delay: 90ms; }
+@keyframes protoRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-1, .rise-2, .rise-3 { animation: none; }
+  .v3-card { transition: none; }
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<nav class="proto-picker" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+  <button class="proto-picker-item" data-active aria-current="true">Hanko</button>
+  <button class="proto-picker-item">Nishiki</button>
+  <button class="proto-picker-item">Night Ink</button>
+  <button class="proto-picker-item">Night Indigo</button>
+  <span class="proto-picker-divider" aria-hidden="true"></span>
+  <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">&#8635;</button>
+</nav>
+
+<style>
+.proto-picker {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(10, 10, 10, 0.82);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.proto-picker-highlight {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  will-change: transform;
+}
+.proto-picker[data-ready] .proto-picker-highlight {
+  transition:
+    transform 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    width 250ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .proto-picker[data-ready] .proto-picker-highlight { transition: none; }
+}
+.proto-picker-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font: inherit;
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+.proto-picker-item:hover { color: rgba(255, 255, 255, 0.85); }
+.proto-picker-item:active { transform: scale(0.97); }
+.proto-picker-item:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.4); outline-offset: 2px; }
+.proto-picker-item[data-active] { color: #fff; }
+.proto-picker-divider { width: 1px; height: 16px; margin: 0 4px; background: rgba(255, 255, 255, 0.12); }
+.proto-picker-replay { padding: 0 10px; font-size: 14px; }
+.proto-picker[data-position="top"] { bottom: auto; top: 24px; }
+</style>
+
+<script>
+const DATA = {"surahs": [{"ch": 1, "name": "Al-Fatihah", "ar": "الْفَاتِحَۃِ", "verses": 7}, {"ch": 2, "name": "Al-Baqarah", "ar": " الْبَقَرَۃ", "verses": 287}, {"ch": 4, "name": "An-Nisa'", "ar": "النِّسَآءِ", "verses": 177}, {"ch": 12, "name": "Yusuf", "ar": "یُوْسُفَ", "verses": 112}, {"ch": 18, "name": "Al-Kahf", "ar": "الْکَھْفِ", "verses": 111}, {"ch": 36, "name": "Ya Sin", "ar": "یٰسٓ", "verses": 84}, {"ch": 55, "name": "Ar-Rahman", "ar": "الرَّحْمٰنِ", "verses": 79}, {"ch": 67, "name": "Al-Mulk", "ar": "الْمُلْکِ", "verses": 31}, {"ch": 78, "name": "An-Naba'", "ar": "النَّبَاِ", "verses": 41}, {"ch": 112, "name": "Al-Ikhlas", "ar": "الْاِخْلاَصِ", "verses": 5}, {"ch": 113, "name": "Al-Falaq", "ar": "الْفَلَقِ", "verses": 6}, {"ch": 114, "name": "An-Nas", "ar": "النَّاسِ", "verses": 7}], "verses": [{"n": 1, "ar": "بِسۡمِ اللّٰہِ الرَّحۡمٰنِ الرَّحِیۡمِ ﴿۱﴾", "en": "In the name of Allah, the Gracious, the Merciful."}, {"n": 2, "ar": "الٓـمّٓ ۚ﴿۲﴾", "en": "Alif Lam Mim[✛]."}, {"n": 3, "ar": "ذٰلِکَ الۡکِتٰبُ لَا رَیۡبَ ۚۖۛ فِیۡہِ ۚۛ ہُدًی لِّلۡمُتَّقِیۡنَ ۙ﴿۳﴾", "en": "This is a perfect Book; there is no doubt in it; <i>it is</i> a guidance for the righteous,"}, {"n": 4, "ar": "الَّذِیۡنَ یُؤۡمِنُوۡنَ بِالۡغَیۡبِ وَیُقِیۡمُوۡنَ الصَّلٰوۃَ وَمِمَّا رَزَقۡنٰہُمۡ یُنۡفِقُوۡنَ ۙ﴿۴﴾", "en": "Who believe in the unseen and observe Prayer, and spend out of what We have provided for them;"}, {"n": 5, "ar": "وَالَّذِیۡنَ یُؤۡمِنُوۡنَ بِمَاۤ اُنۡزِلَ اِلَیۡکَ وَمَاۤ اُنۡزِلَ مِنۡ قَبۡلِکَ ۚ وَبِالۡاٰخِرَۃِ ہُمۡ یُوۡقِنُوۡنَ ؕ﴿۵﴾", "en": "And who believe in that which has been revealed to thee, and that which was revealed before thee, and they have firm faith in what is <i>yet</i> to come."}], "demoStatus": {"1": "done", "2": "partial", "4": "next", "12": "later", "18": "next", "36": "unset", "55": "later", "67": "unset", "78": "later", "112": "done", "113": "unset", "114": "partial"}, "demoTicked": {"1": 7, "2": 14, "112": 5, "114": 3}};
+
+const STATUSES = [
+  { id: "", label: "Not set" },
+  { id: "done", label: "Memorised" },
+  { id: "partial", label: "Partial" },
+  { id: "next", label: "Next" },
+  { id: "later", label: "Later" },
+];
+const statusInfo = (id) => STATUSES.find((s) => s.id === id) || STATUSES[0];
+const AUDIO = "https://files.alislam.cloud/audio/tilawat/ashiq/002-";
+const pad3 = (n) => String(n).padStart(3, "0");
+const audioUrl = (v) => AUDIO + pad3(v) + "-AR.mp3";
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// demo state, reset on each mount
+let state = null;
+function freshState() {
+  return {
+    status: { ...DATA.demoStatus },
+    ticked: { 2: new Set([1, 2]) },
+    filter: "all",
+  };
+}
+
+function chipRow(cls, dotColor) {
+  const counts = { done: 0, partial: 0, next: 0, later: 0 };
+  let vDone = 0;
+  for (const s of DATA.surahs) {
+    const st = state.status[s.ch];
+    if (counts[st] !== undefined) { counts[st]++; if (st === "done") vDone += s.verses; }
+  }
+  return `
+  <div class="${cls}-chips">
+    <span class="${cls}-chip"><span class="dot" style="background:#3f7d4e"></span>Memorised ${counts.done} · ${vDone.toLocaleString()} v</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#d5648a"></span>Partial ${counts.partial}</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#c96f2a"></span>Next ${counts.next}</span>
+    <span class="${cls}-chip"><span class="dot" style="background:#4a6fa5"></span>Later ${counts.later}</span>
+  </div>`;
+}
+
+function visibleSurahs() {
+  if (state.filter === "all") return DATA.surahs;
+  if (state.filter === "unset") return DATA.surahs.filter((s) => !state.status[s.ch]);
+  return DATA.surahs.filter((s) => state.status[s.ch] === state.filter);
+}
+
+/* ============ variant renderers ============ */
+
+function makeRenderer(cls, subtitle, brandHtml, options = {}) {
+  const dark = !!options.dark;
+  const cards = visibleSurahs().map((s, i) => `
+    <div class="${cls}-card rise ${i < 4 ? "rise-" + (i % 3 + 1) : ""}" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">
+      <div class="${cls}-card-top"><span class="${cls}-num">${s.ch}</span><span class="${cls}-cardar ar">${esc(s.ar)}</span></div>
+      <div class="${cls}-name">${esc(s.name)}</div>
+      <div class="${cls}-meta">${s.verses} verses${DATA.demoTicked[s.ch] ? ` · <span class="tick">${DATA.demoTicked[s.ch]}✓</span>` : ""}</div>
+      <button class="${cls}-pill p-status" data-status="${state.status[s.ch] || ""}" data-ch="${s.ch}">${statusInfo(state.status[s.ch] || "").label}</button>
+    </div>`).join("");
+  const verses = DATA.verses.map((v) => verseRow(cls, v)).join("");
+  return `
+  <div class="${cls}">
+    <header class="${cls}-top rise">
+      <div>${brandHtml}<div class="${cls}-sub">${subtitle}</div></div>
+      ${chipRow(cls)}
+    </header>
+    <main class="${cls}-main">
+      <div class="${cls}-filters rise-1">${filters(cls)}</div>
+      <div class="${cls}-grid rise-2">${cards}</div>
+      <section class="${cls}-sec">
+        <a class="${cls}-crumb" href="#" onclick="return false">← All chapters</a>
+        <div class="${cls}-chhead rise-3">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="${cls}-chtitle">2. Al-Baqarah <span class="ar">${esc(DATA.surahs[1].ar)}</span></div>
+            <button class="${cls}-pill p-status" data-status="${state.status[2]}" data-ch="2">${statusInfo(state.status[2]).label}</button>
+          </div>
+          <div class="${cls}-chmeta">287 verses · <b>14/287 verses memorised</b></div>
+          <div class="${cls}-controls">
+            <button class="${cls}-btn p-playpart">▶ Play part</button>
+            <button class="${cls}-btn o">Sher Ali</button>
+          </div>
+        </div>
+        ${partHeader(cls)}
+        ${verses}
+      </section>
+    </main>
+  </div>`;
+}
+
+function renderHanko() {
+  return makeRenderer("h1", "Hanko — Washi with solid stamp seals (Wada 190)",
+    '<div class="h1-brand"><span class="mark">۞</span>Quran Memoriser</div>');
+}
+function renderNishiki() {
+  return makeRenderer("n2", "Nishiki — colour-washed cards, solid pills (Wada 190)",
+    '<div class="n2-brand"><span class="mark">۞</span>Quran Memoriser</div>');
+}
+function renderNightInk() {
+  return makeRenderer("d3", "Night Ink — Washi after dark · gold accents",
+    '<div class="d3-brand"><span class="mark">۞</span>Quran Memoriser</div>');
+}
+function renderNightIndigo() {
+  return makeRenderer("d4", "Night Indigo — Deep Indigo · Cinnamon Buff (Wada 344/211)",
+    '<div class="d4-brand">۞ Quran Memoriser</div>');
+}
+
+function filters(cls) {
+  const defs = [["all", "All"], ["done", "Memorised"], ["partial", "Partial"], ["next", "Next"], ["later", "Later"], ["unset", "Not set"]];
+  return defs.map(([id, label]) =>
+    `<button class="${cls}-filter p-filter" data-f="${id}" ${state.filter === id ? "data-active" : ""}>${label}</button>`).join("");
+}
+
+function verseRow(cls, v) {
+  const on = state.ticked[2].has(v.n);
+  return `
+  <div class="${cls}-verse ${on ? "mem" : ""}" data-v="${v.n}">
+    <div class="${cls}-vtop">
+      <button class="${cls}-vplay p-play" data-v="${v.n}" title="Play 2:${v.n}">▶</button>
+      <button class="${cls}-vtick p-tick" data-v="${v.n}" ${on ? "data-on" : ""} title="Mark memorised">✓</button>
+      <span class="${cls}-vref">2 : ${v.n}</span>
+    </div>
+    <div class="${cls}-var ar">${esc(v.ar)}</div>
+    <div class="${cls}-ven">${esc(v.en)}</div>
+  </div>`;
+}
+
+function partHeader(cls) {
+  const total = 14, done = state.ticked[2].size;
+  const on = done === total;
+  return `
+  <div class="${cls}-part">
+    <div><span class="no">Part 1 of 42</span><span class="range">verses 2:1–14 · 159 words</span><span class="cnt p-partcount">${done}/${total} verses ✓</span></div>
+    <div class="${cls}-partbtns">
+      <button class="${cls}-ptick p-parttick" ${on ? "data-on" : ""}>${on ? "✓ Memorised" : "Mark memorised"}</button>
+      <button class="${cls}-pplay p-playpart">▶ Play part</button>
+    </div>
+  </div>`;
+}
+
+/* ============ interactions (delegated, wired after each mount) ============ */
+
+let audio = null;
+function stopAudio() {
+  if (audio) { audio.pause(); audio = null; }
+  document.querySelectorAll(".playing").forEach((n) => n.classList.remove("playing"));
+}
+
+function playVerse(v) {
+  stopAudio();
+  audio = new Audio(audioUrl(v));
+  audio.addEventListener("ended", stopAudio);
+  audio.play().catch(() => {});
+  const row = document.querySelector(`.verse[data-v="${v}"], [class*="-verse"][data-v="${v}"]`);
+  if (row) row.classList.add("playing");
+}
+
+function wireInteractions(root) {
+  root.addEventListener("click", (e) => {
+    const t = e.target.closest("button");
+    if (!t) return;
+    if (t.classList.contains("p-status")) {
+      const order = ["", "done", "partial", "next", "later"];
+      const ch = String(t.dataset.ch);
+      const next = order[(order.indexOf(t.dataset.status || "") + 1) % order.length];
+      state.status[ch] = next;
+      t.dataset.status = next;
+      t.textContent = statusInfo(next).label;
+      const card = root.querySelector(`[data-ch="${ch}"]`);
+      if (card && card !== t) card.dataset.status = next;
+      const chips = root.querySelector('[class*="-chips"]');
+      if (chips) chips.outerHTML = chipRow(chips.className.split("-")[0]);
+      return;
+    }
+    if (t.classList.contains("p-tick")) {
+      const v = +t.dataset.v;
+      const set = state.ticked[2];
+      if (set.has(v)) { set.delete(v); t.removeAttribute("data-on"); }
+      else { set.add(v); t.setAttribute("data-on", ""); }
+      const row = t.closest('[class*="-verse"]');
+      if (row) row.classList.toggle("mem", set.has(v));
+      const cnt = root.querySelector(".p-partcount");
+      if (cnt) cnt.textContent = `${set.size}/14 verses ✓`;
+      const ptick = root.querySelector(".p-parttick");
+      if (ptick) {
+        const on = set.size === 14;
+        ptick.toggleAttribute("data-on", on);
+        ptick.textContent = on ? "✓ Memorised" : "Mark memorised";
+      }
+      return;
+    }
+    if (t.classList.contains("p-parttick")) {
+      const set = state.ticked[2];
+      const on = set.size !== 14;
+      set.clear();
+      if (on) DATA.verses.forEach((v) => set.add(v.n));
+      root.querySelectorAll(".p-tick").forEach((b) => {
+        b.toggleAttribute("data-on", set.has(+b.dataset.v));
+        const row = b.closest('[class*="-verse"]');
+        if (row) row.classList.toggle("mem", set.has(+b.dataset.v));
+      });
+      const cnt = root.querySelector(".p-partcount");
+      if (cnt) cnt.textContent = `${set.size}/14 verses ✓`;
+      t.toggleAttribute("data-on", set.size === 14);
+      t.textContent = set.size === 14 ? "✓ Memorised" : "Mark memorised";
+      return;
+    }
+    if (t.classList.contains("p-play")) { playVerse(+t.dataset.v); return; }
+    if (t.classList.contains("p-playpart")) {
+      stopAudio();
+      const order = [...DATA.verses.map((v) => v.n)];
+      let i = 0;
+      const playNext = () => {
+        if (i >= order.length) return stopAudio();
+        const v = order[i++];
+        stopAudio();
+        audio = new Audio(audioUrl(v));
+        audio.addEventListener("ended", playNext);
+        audio.play().catch(() => {});
+        const row = document.querySelector(`[class*="-verse"][data-v="${v}"]`);
+        if (row) { document.querySelectorAll(".playing").forEach((n) => n.classList.remove("playing")); row.classList.add("playing"); }
+      };
+      playNext();
+      return;
+    }
+    if (t.classList.contains("p-filter")) {
+      state.filter = t.dataset.f;
+      remount();
+    }
+  });
+}
+
+const variants = [renderHanko, renderNishiki, renderNightInk, renderNightIndigo];
+const stage = document.getElementById("stage");
+const picker = document.querySelector(".proto-picker");
+const highlight = picker.querySelector(".proto-picker-highlight");
+const allItems = [...picker.querySelectorAll(".proto-picker-item")].filter((b) => !b.classList.contains("proto-picker-replay"));
+const replayBtn = picker.querySelector(".proto-picker-replay");
+let current = 0;
+let wired = false;
+
+function moveHighlight() {
+  const el = allItems[current];
+  highlight.style.width = el.offsetWidth + "px";
+  highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+}
+
+function remount() {
+  stage.innerHTML = "";
+  void stage.offsetHeight; // force reflow so entrance animations re-run (no rAF: hidden tabs never fire it)
+  state = freshState();
+  const html = variants[current]();
+  const holder = document.createElement("div");
+  holder.innerHTML = html;
+  stage.appendChild(holder.firstElementChild);
+  if (!wired) { wireInteractions(stage); wired = true; }
+}
+
+function setActive(i) {
+  if (i < 0 || i >= variants.length) return;
+  current = i;
+  allItems.forEach((el, j) => {
+    el.toggleAttribute("data-active", j === i);
+    if (j === i) el.setAttribute("aria-current", "true");
+    else el.removeAttribute("aria-current");
+  });
+  moveHighlight();
+  try {
+    const url = new URL(location);
+    url.searchParams.set("v", i + 1);
+    history.replaceState(null, "", url);
+  } catch {}
+  remount();
+}
+
+allItems.forEach((el, i) => el.addEventListener("click", () => setActive(i)));
+replayBtn?.addEventListener("click", () => remount());
+window.addEventListener("resize", moveHighlight);
+
+document.addEventListener("keydown", (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = parseInt(e.key, 10);
+  if (num >= 1 && num <= variants.length) setActive(num - 1);
+  else if (e.key === "ArrowRight") setActive((current + 1) % variants.length);
+  else if (e.key === "ArrowLeft") setActive((current - 1 + variants.length) % variants.length);
+  else if (e.key === "r" || e.key === "R") remount();
+});
+
+setActive((parseInt(new URLSearchParams(location.search).get("v"), 10) || 1) - 1);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute("data-ready", "")));
+</script>
+</body>
+</html>
