@@ -38,25 +38,247 @@
     objectUrl: null,
   };
 
+  // Chapter statuses, stored with timestamps for cross-device merging:
+  // { "2": { "s": "partial", "t": <ms> } }. The plain-string format from
+  // before sync is migrated on read (treated as t=0, i.e. oldest).
   const statusStore = {
     key: "qm.status.v1",
-    read() { try { return JSON.parse(localStorage.getItem(this.key)) || {}; } catch { return {}; } },
-    write(m) { localStorage.setItem(this.key, JSON.stringify(m)); renderChips(); },
-    get(ch) { return this.read()[ch] || ""; },
-    cycle(ch) {
-      const map = this.read();
-      const order = ["", "done", "partial", "next", "later"];
-      map[ch] = order[(order.indexOf(map[ch] || "") + 1) % order.length];
-      if (!map[ch]) delete map[ch];
-      this.write(map);
-      return map[ch] || "";
+    readRaw() {
+      let m = {};
+      try { m = JSON.parse(localStorage.getItem(this.key)) || {}; } catch {}
+      const out = {};
+      for (const [ch, v] of Object.entries(m)) {
+        if (typeof v === "string") { if (v) out[ch] = { s: v, t: 0 }; }
+        else if (v && typeof v === "object" && v.s) out[ch] = { s: v.s, t: v.t || 0 };
+      }
+      return out;
     },
+    writeRaw(m) { localStorage.setItem(this.key, JSON.stringify(m)); renderChips(); },
+    read() {
+      const out = {};
+      for (const [ch, v] of Object.entries(this.readRaw())) out[ch] = v.s;
+      return out;
+    },
+    get(ch) { return (this.readRaw()[ch] || {}).s || ""; },
     set(ch, val) {
-      const map = this.read();
-      if (val) map[ch] = val; else delete map[ch];
-      this.write(map);
+      const m = this.readRaw();
+      if (val) m[ch] = { s: val, t: Date.now() }; else delete m[ch];
+      this.writeRaw(m);
+      scheduleSyncPush();
+      return val;
+    },
+    cycle(ch) {
+      const order = ["", "done", "partial", "next", "later"];
+      const next = order[(order.indexOf(this.get(ch)) + 1) % order.length];
+      return this.set(ch, next);
     },
   };
+
+  // ---------- cross-device sync (GitHub private repo as the store) ----------
+  // Devices link once with a fine-grained token scoped to this one repo.
+  // Merge rule: per key, the entry with the larger |timestamp| wins
+  // (negative timestamps are un-tick tombstones).
+  const syncManager = {
+    cfgKey: "qm.sync.v1",
+    api: "https://api.github.com",
+    owner: "drhammadkhan",
+    repo: "quran-sync",
+    path: "state.json",
+    cfg() {
+      try { return JSON.parse(localStorage.getItem(this.cfgKey)) || null; } catch { return null; }
+    },
+    saveCfg(c) { localStorage.setItem(this.cfgKey, JSON.stringify(c)); },
+    linked() { return !!this.cfg()?.token; },
+    async gh(path, opts = {}) {
+      const c = this.cfg();
+      if (!c?.token) throw new Error("Not linked");
+      const r = await fetch(this.api + path, {
+        ...opts,
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: "Bearer " + c.token,
+          "Content-Type": "application/json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(opts.headers || {}),
+        },
+      });
+      if (!r.ok) throw new Error("GitHub " + r.status + (r.status === 401 ? " (token rejected)" : r.status === 409 ? " (conflict, retrying helps)" : ""));
+      return r.status === 204 ? null : r.json();
+    },
+    mergeInto(localRaw, remoteRaw) {
+      const pick = (a = {}, b = {}) => {
+        const out = { ...a };
+        for (const [k, bv] of Object.entries(b)) {
+          const av = out[k];
+          if (av === undefined || Math.abs(bv) > Math.abs(av)) out[k] = bv;
+        }
+        return out;
+      };
+      const status = {}, verses = {};
+      const allCh = new Set([...Object.keys(localRaw.status || {}), ...Object.keys(remoteRaw.status || {})]);
+      for (const ch of allCh) {
+        const m = pick(localRaw.status?.[ch], remoteRaw.status?.[ch]);
+        if (Object.keys(m).length) status[ch] = m;
+      }
+      const allVCh = new Set([...Object.keys(localRaw.verses || {}), ...Object.keys(remoteRaw.verses || {})]);
+      for (const ch of allVCh) {
+        const m = pick(localRaw.verses?.[ch], remoteRaw.verses?.[ch]);
+        if (Object.keys(m).length) verses[ch] = m;
+      }
+      return { status, verses };
+    },
+    async syncNow() {
+      const c = this.cfg();
+      if (!c?.token) throw new Error("Not linked");
+      let remote = { status: {}, verses: {} }, sha = null;
+      try {
+        const f = await this.gh(`/repos/${this.owner}/${this.repo}/contents/${this.path}`);
+        sha = f.sha;
+        remote = JSON.parse(atob((f.content || "").replace(/\n/g, "")));
+      } catch (e) { /* 404 = fresh file */ }
+      const merged = this.mergeInto(
+        { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
+        { status: remote.status || {}, verses: remote.verses || {} }
+      );
+      statusStore.writeRaw(merged.status);
+      verseStore.writeAllRaw(merged.verses);
+      const payload = {
+        app: "quran-memoriser", v: 1, updatedAt: Date.now(),
+        device: c.device || "unknown",
+        status: merged.status, verses: merged.verses,
+      };
+      const body = {
+        message: "sync " + new Date().toISOString(),
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
+      };
+      if (sha) body.sha = sha;
+      await this.gh(`/repos/${this.owner}/${this.repo}/contents/${this.path}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      c.device = c.device || Math.random().toString(36).slice(2, 8);
+      c.lastSync = Date.now();
+      this.saveCfg(c);
+      return true;
+    },
+  };
+
+  let syncPushTimer = null;
+  function scheduleSyncPush() {
+    if (!syncManager.linked()) return;
+    clearTimeout(syncPushTimer);
+    syncPushTimer = setTimeout(() => syncManager.syncNow().catch(() => {}), 4000);
+  }
+
+  function renderSyncPanel() {
+    const existing = document.getElementById("sync-panel");
+    if (existing) { existing.remove(); return; }
+    const overlay = el("div", "modal-overlay");
+    overlay.id = "sync-panel";
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    const card = el("div", "modal-card");
+    const close = el("button", "modal-close", "✕");
+    close.addEventListener("click", () => overlay.remove());
+    card.append(el("h2", "modal-title", "Sync across devices"), close);
+
+    const cfg = syncManager.cfg();
+    const paint = () => {
+      card.querySelectorAll(".sync-body").forEach((n) => n.remove());
+      const body = el("div", "sync-body");
+      if (!syncManager.linked()) {
+        body.append(el("div", "modal-note",
+          "Progress is stored in a private GitHub repo of yours (<b>drhammadkhan/quran-sync</b>). " +
+          "Link each device once with a token that can only read and write that one repository."));
+        const steps = el("div", "modal-note",
+          `<b>1.</b> Create the token (already scoped to the repo):<br/>
+           <a href="https://github.com/settings/personal-access-tokens/new?repo_id=1437042383&repository_permissions=contents" target="_blank" rel="noopener">github.com → new fine-grained token</a><br/>
+           <b>2.</b> Generate it, copy the value (starts <code>github_pat_…</code>)<br/>
+           <b>3.</b> Paste it below on this device.`);
+        steps.style.lineHeight = "1.8";
+        const input = el("input");
+        input.type = "password";
+        input.placeholder = "github_pat_…";
+        input.autocomplete = "off";
+        input.style.cssText = "width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:13px;margin:10px 0";
+        const linkBtn = el("button", "btn btn-play", "Link this device");
+        const msg = el("div", "reciter-status");
+        linkBtn.addEventListener("click", async () => {
+          const token = input.value.trim();
+          if (!token) return;
+          linkBtn.textContent = "Linking…";
+          try {
+            syncManager.saveCfg({ token, lastSync: 0 });
+            await syncManager.gh(`/repos/${syncManager.owner}/${syncManager.repo}`);
+            await syncManager.syncNow();
+            route(); // pull may have changed visible state
+            paint();
+          } catch (e) {
+            syncManager.saveCfg({});
+            linkBtn.textContent = "Link this device";
+            msg.textContent = "Couldn't link: " + e.message;
+          }
+        });
+        body.append(steps, input, linkBtn, msg);
+      } else {
+        const last = cfg?.lastSync ? new Date(cfg.lastSync).toLocaleString() : "never";
+        const info = el("div", "storage-line", "✓ Linked · last synced " + last + (cfg.device ? " · device " + cfg.device : ""));
+        const row = el("div", "reciter-actions");
+        row.style.margin = "12px 0";
+        const nowBtn = el("button", "btn btn-play", "⟳ Sync now");
+        const msg = el("span", "reciter-status");
+        nowBtn.addEventListener("click", async () => {
+          nowBtn.textContent = "Syncing…";
+          try { await syncManager.syncNow(); route(); paint(); }
+          catch (e) { nowBtn.textContent = "⟳ Sync now"; msg.textContent = e.message; }
+        });
+        const unlink = el("button", "btn btn-ghost", "Unlink");
+        unlink.addEventListener("click", () => {
+          syncManager.saveCfg({});
+          paint();
+        });
+        row.append(nowBtn, unlink, msg);
+        body.append(info, row);
+
+        // snapshot export / import (offline fallback)
+        const snapTitle = el("div", "modal-title", "");
+        snapTitle.style.fontSize = "15px";
+        snapTitle.textContent = "Snapshot (manual backup)";
+        const snapRow = el("div", "reciter-actions");
+        const copyBtn = el("button", "btn btn-ghost", "Copy snapshot");
+        copyBtn.addEventListener("click", async () => {
+          const payload = { app: "quran-memoriser", v: 1, exportedAt: Date.now(),
+            status: statusStore.readRaw(), verses: verseStore.readAllRaw() };
+          try { await navigator.clipboard.writeText(JSON.stringify(payload)); copyBtn.textContent = "Copied ✓"; }
+          catch { copyBtn.textContent = "Copy failed — use the box below"; }
+          setTimeout(() => (copyBtn.textContent = "Copy snapshot"), 2000);
+        });
+        snapRow.append(copyBtn);
+        const area = el("textarea");
+        area.placeholder = "…or paste a snapshot here and press Import";
+        area.style.cssText = "width:100%;height:64px;margin:10px 0;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:12px";
+        const importBtn = el("button", "btn btn-ghost", "Import snapshot");
+        importBtn.addEventListener("click", () => {
+          try {
+            const parsed = JSON.parse(area.value);
+            const merged = syncManager.mergeInto(
+              { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
+              { status: parsed.status || {}, verses: parsed.verses || {} }
+            );
+            statusStore.writeRaw(merged.status);
+            verseStore.writeAllRaw(merged.verses);
+            route();
+            importBtn.textContent = "Imported ✓";
+            setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000);
+          } catch { importBtn.textContent = "Invalid snapshot"; setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000); }
+        });
+        body.append(snapTitle, snapRow, area, importBtn);
+      }
+      card.append(body);
+    };
+    paint();
+    overlay.append(card);
+    document.body.append(overlay);
+  }
 
   const prefs = {
     key: "qm.prefs.v1",
@@ -94,25 +316,43 @@
     },
   };
 
-  // Per-verse memorisation ticks, e.g. { "2": { "1": true } }
+  // Per-verse memorisation ticks with timestamps: { "2": { "1": <ms> } }.
+  // Negative timestamps are tombstones ("unticked at <ms>") so un-ticks
+  // propagate across devices. Legacy boolean true migrates to t=0.
   const verseStore = {
     key: "qm.verses.v1",
-    read(ch) {
-      try { return (JSON.parse(localStorage.getItem(this.key)) || {})[ch] || {}; } catch { return {}; }
-    },
-    write(ch, m) {
+    readAllRaw() {
       let all = {};
       try { all = JSON.parse(localStorage.getItem(this.key)) || {}; } catch {}
-      if (Object.keys(m).length) all[ch] = m; else delete all[ch];
-      localStorage.setItem(this.key, JSON.stringify(all));
+      for (const ch of Object.keys(all)) {
+        const out = {};
+        for (const [v, val] of Object.entries(all[ch])) {
+          if (val === true) out[v] = 0;
+          else if (typeof val === "number" && val !== 0) out[v] = val;
+        }
+        if (Object.keys(out).length) all[ch] = out; else delete all[ch];
+      }
+      return all;
     },
-    get(ch, v) { return !!this.read(ch)[v]; },
+    writeAllRaw(m) { localStorage.setItem(this.key, JSON.stringify(m)); },
+    read(ch) {
+      const out = {};
+      for (const [v, t] of Object.entries(this.readAllRaw()[ch] || {})) if (t >= 0) out[v] = true;
+      return out;
+    },
+    get(ch, v) {
+      const t = (this.readAllRaw()[ch] || {})[v];
+      return t !== undefined && t >= 0;
+    },
     set(ch, v, on) {
-      const m = this.read(ch);
-      if (on) m[v] = true; else delete m[v];
-      this.write(ch, m);
+      const all = this.readAllRaw();
+      const m = all[ch] || {};
+      m[v] = on ? Date.now() : -Date.now();
+      all[ch] = m;
+      this.writeAllRaw(all);
+      scheduleSyncPush();
     },
-    count(ch) { return Object.keys(this.read(ch)).length; },
+    count(ch) { return Object.values(this.readAllRaw()[ch] || {}).filter((t) => t >= 0).length; },
   };
 
   // Split a surah into memorisation parts: ~150 Arabic words each (about half a
@@ -895,9 +1135,10 @@
   // ---------- boot ----------
   themeManager.apply();
   document.getElementById("theme-btn")?.addEventListener("click", () => themeManager.cycle());
+  document.getElementById("sync-btn")?.addEventListener("click", renderSyncPanel);
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
-  window.__qm = { resolveAudioUrl }; // small debug/verification hook
+  window.__qm = { resolveAudioUrl, syncManager, statusStore, verseStore }; // debug/verification hook
 
   // Service worker makes the app installable and fully offline (needs a
   // secure context: https or localhost — silently skipped on plain LAN IPs).
@@ -905,10 +1146,20 @@
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
+  // returning to the app (e.g. phone unlock) pulls the latest state
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && syncManager.linked()) {
+      syncManager.syncNow().then(() => { renderChips(); route(); }).catch(() => {});
+    }
+  });
+
   fetch("data/surahs.json")
     .then((r) => r.json())
-    .then((list) => {
+    .then(async (list) => {
       surahs = list;
+      if (syncManager.linked()) {
+        try { await syncManager.syncNow(); } catch {} // best-effort pull before first paint
+      }
       renderChips();
       route();
     })
