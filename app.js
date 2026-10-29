@@ -723,6 +723,61 @@
     }
   }
 
+  // ---------- chapter ↔ verse rules ----------
+  // The chapter status and its verse ticks are one state seen from two levels:
+  //   Memorised ⟺ every verse ticked · Partial ⟺ some ticked (or a coarse
+  //   manual claim) · Not set ⟺ nothing ticked and nothing claimed.
+  // Each level moves the other: verse ticks roll the status up; resting the
+  // button on Memorised / Not set rolls the ticks to match. Cycling through
+  // a status never commits — only stopping on one does.
+  function rollupChapterStatus(ch) {
+    const meta = surahs.find((s) => s.ch === ch);
+    const total = meta ? meta.verses : 0;
+    const done = verseStore.count(ch);
+    const cur = statusStore.get(ch);
+    if (done === total) {
+      if (cur !== "done") statusStore.set(ch, "done");
+    } else if (done > 0) {
+      if (cur !== "partial") statusStore.set(ch, "partial");
+    } else if (cur === "partial" || cur === "done") {
+      statusStore.set(ch, "");
+    }
+    syncStatusButtons(ch);
+  }
+
+  function applyStatusSideEffects(ch) {
+    const meta = surahs.find((s) => s.ch === ch);
+    if (!meta) return;
+    const st = statusStore.get(ch);
+    if (st !== "done" && st !== "") return; // partial/next/later leave the verse ticks alone
+    const wantOn = st === "done";
+    const all = verseStore.readAllRaw();
+    const m = all[ch] || {};
+    const t = Date.now();
+    let changed = false;
+    for (let n = 1; n <= meta.verses; n++) {
+      const on = m[n] !== undefined && m[n] >= 0;
+      if (on !== wantOn) { m[n] = wantOn ? t : -t; changed = true; }
+    }
+    if (!changed) return;
+    if (Object.keys(m).length) all[ch] = m; else delete all[ch];
+    verseStore.writeAllRaw(all);
+    // the open chapter view (if any) shows the verse layer following the status
+    if (currentChapter === ch) {
+      chapterScrollY[ch] = window.scrollY;
+      renderChapter(ch);
+    }
+  }
+
+  const statusSideEffectTimers = new Map(); // per chapter, so rapid cycling on one never cancels another
+  function scheduleStatusSideEffects(ch) {
+    clearTimeout(statusSideEffectTimers.get(ch));
+    statusSideEffectTimers.set(ch, setTimeout(() => {
+      statusSideEffectTimers.delete(ch);
+      applyStatusSideEffects(ch);
+    }, 500));
+  }
+
   // ---------- shared components ----------
   function statusButton(ch, { small = false } = {}) {
     const cur = statusStore.get(ch);
@@ -738,6 +793,7 @@
       btn.innerHTML = `<span class="dot"></span>${esc(statusInfo(next).label)}`;
       const card = document.querySelector(`.card[data-ch="${ch}"]`);
       if (card) card.dataset.status = next;
+      scheduleStatusSideEffects(ch);
     });
     return btn;
   }
@@ -858,8 +914,11 @@
         Track at whatever granularity suits you: whole chapters, or verse by verse with the ✓
         on each verse. Long chapters are split into <b>parts</b> of about 150 Arabic words —
         roughly half a mushaf page, one memorisation sitting — with their own tick and player.</p>
-        <p>Progress joins up on its own: tick every verse of a part and the part completes;
-        complete every part and the chapter turns Memorised. Unticking walks it back the same way.</p>
+        <p>Progress joins up on its own, from either level: tick every verse
+        of a part and the part completes; complete every part and the chapter
+        turns Memorised. Or mark the chapter Memorised directly and every
+        verse ticks itself. Unticking walks it all back the same way — your
+        last untick returns the chapter to Not set.</p>
       </section>
 
       <section>
@@ -1141,19 +1200,7 @@
       }
     };
     const applyChapterRollup = () => {
-      const done = verseStore.count(ch);
-      const cur = statusStore.get(ch);
-      if (done === totalVerses) {
-        if (cur !== "done") statusStore.set(ch, "done");
-      } else if (done > 0) {
-        // some verses memorised → the chapter is partial
-        if (cur !== "partial") statusStore.set(ch, "partial");
-      } else if (cur === "partial" || cur === "done") {
-        // unticking the last verse returns the chapter to Not set;
-        // statuses the rollup never manages (next/later) are left alone
-        statusStore.set(ch, "");
-      }
-      syncStatusButtons(ch);
+      rollupChapterStatus(ch);
       refreshChapterMeta();
     };
     const toggleVerseMemorised = (v, row) => {
