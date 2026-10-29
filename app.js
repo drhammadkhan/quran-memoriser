@@ -31,17 +31,20 @@
     chapter: null,      // chapter number during continuous play
     verseIndex: -1,     // index into verses of current chapter
     endIndex: -1,       // last verse index to play (part boundary or whole chapter)
+    partIndex: null,    // part index when playing a specific part
     repeatLeft: 0,
     continuous: false,
     currentCh: null,
     currentV: null,
     objectUrl: null,
     gapTimer: null,
+    errorStreak: 0,
   };
 
   // Chapter statuses, stored with timestamps for cross-device merging:
-  // { "2": { "s": "partial", "t": <ms> } }. The plain-string format from
-  // before sync is migrated on read (treated as t=0, i.e. oldest).
+  // { "2": { "s": "partial", "t": <ms> } }. Empty string "s": "" is a tombstone
+  // ("cleared to Not set at <ms>"). The plain-string format from before sync is
+  // migrated on read (treated as t=0, i.e. oldest).
   const statusStore = {
     key: "qm.status.v1",
     readRaw() {
@@ -50,22 +53,22 @@
       const out = {};
       for (const [ch, v] of Object.entries(m)) {
         if (typeof v === "string") { if (v) out[ch] = { s: v, t: 0 }; }
-        else if (v && typeof v === "object" && v.s) out[ch] = { s: v.s, t: v.t || 0 };
+        else if (v && typeof v === "object" && typeof v.s === "string") out[ch] = { s: v.s, t: v.t || 0 };
       }
       return out;
     },
     writeRaw(m) { localStorage.setItem(this.key, JSON.stringify(m)); renderChips(); },
     read() {
       const out = {};
-      for (const [ch, v] of Object.entries(this.readRaw())) out[ch] = v.s;
+      for (const [ch, v] of Object.entries(this.readRaw())) if (v.s) out[ch] = v.s;
       return out;
     },
     get(ch) { return (this.readRaw()[ch] || {}).s || ""; },
     set(ch, val) {
       const m = this.readRaw();
-      if (val) m[ch] = { s: val, t: Date.now() }; else delete m[ch];
+      m[ch] = { s: val || "", t: Date.now() };
       this.writeRaw(m);
-      return val;
+      return val || "";
     },
     cycle(ch) {
       const order = ["", "done", "partial", "next", "later"];
@@ -74,9 +77,20 @@
     },
   };
 
+  // ---------- modal helper ----------
+  function bindModalEscape(overlay) {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        overlay.remove();
+        document.removeEventListener("keydown", onKey);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+  }
+
   // ---------- export / import snapshot ----------
   // Snapshots carry timestamps, so importing always merges: the newer state
-  // of each chapter status / verse tick wins. Un-ticks are tombstones.
+  // of each chapter status / verse tick wins. Un-ticks and status clears are tombstones.
   const snapshots = {
     build() {
       return {
@@ -85,34 +99,61 @@
       };
     },
     mergeInto(localRaw, snapRaw) {
-      const pick = (a = {}, b = {}) => {
+      const pickStatus = (a, b) => {
+        const aOk = a && typeof a === "object" && typeof a.s === "string";
+        const bOk = b && typeof b === "object" && typeof b.s === "string";
+        if (!aOk && !bOk) return null;
+        if (!aOk) return { s: b.s, t: b.t || 0 };
+        if (!bOk) return { s: a.s, t: a.t || 0 };
+        return (b.t || 0) >= (a.t || 0) ? { s: b.s, t: b.t || 0 } : { s: a.s, t: a.t || 0 };
+      };
+      const pickVerses = (a = {}, b = {}) => {
         const out = { ...a };
         for (const [k, bv] of Object.entries(b)) {
+          if (typeof bv !== "number") continue;
           const av = out[k];
-          if (av === undefined || Math.abs(bv) > Math.abs(av)) out[k] = bv;
+          if (av === undefined || Math.abs(bv) >= Math.abs(av)) out[k] = bv;
         }
         return out;
       };
       const status = {}, verses = {};
       const chs = new Set([...Object.keys(localRaw.status || {}), ...Object.keys(snapRaw.status || {})]);
       for (const ch of chs) {
-        const m = pick(localRaw.status?.[ch], snapRaw.status?.[ch]);
-        if (Object.keys(m).length) status[ch] = m;
+        const m = pickStatus(localRaw.status?.[ch], snapRaw.status?.[ch]);
+        if (m) status[ch] = m;
       }
       const vchs = new Set([...Object.keys(localRaw.verses || {}), ...Object.keys(snapRaw.verses || {})]);
       for (const ch of vchs) {
-        const m = pick(localRaw.verses?.[ch], snapRaw.verses?.[ch]);
+        const m = pickVerses(localRaw.verses?.[ch], snapRaw.verses?.[ch]);
         if (Object.keys(m).length) verses[ch] = m;
       }
       return { status, verses };
     },
     apply(snap) {
+      if (!snap || typeof snap !== "object") throw new Error("Invalid snapshot");
       const merged = this.mergeInto(
         { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
         { status: snap.status || {}, verses: snap.verses || {} }
       );
       statusStore.writeRaw(merged.status);
       verseStore.writeAllRaw(merged.verses);
+      // Reconcile chapter statuses with merged verse ticks
+      const touched = new Set([
+        ...Object.keys(merged.status || {}),
+        ...Object.keys(merged.verses || {}),
+      ]);
+      for (const chStr of touched) {
+        const ch = parseInt(chStr, 10);
+        const meta = surahs.find((s) => s.ch === ch);
+        if (!meta) continue;
+        const done = verseStore.count(ch);
+        const cur = statusStore.get(ch);
+        if (done === meta.verses && cur !== "done") {
+          statusStore.set(ch, "done");
+        } else if (done > 0 && done < meta.verses && (cur === "" || cur === "done")) {
+          statusStore.set(ch, "partial");
+        }
+      }
     },
   };
 
@@ -121,7 +162,10 @@
     if (existing) { existing.remove(); return; }
     const overlay = el("div", "modal-overlay");
     overlay.id = "export-panel";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    bindModalEscape(overlay);
     const card = el("div", "modal-card");
     const close = el("button", "modal-close", "✕");
     close.addEventListener("click", () => overlay.remove());
@@ -133,15 +177,24 @@
     const row = el("div", "reciter-actions");
     row.style.margin = "12px 0";
 
-    const shareBtn = el("button", "btn btn-play", "⇪ Share snapshot file");
+    const shareBtn = el("button", "btn btn-play", "⇪ Share / save file");
     shareBtn.addEventListener("click", async () => {
       const data = JSON.stringify(snapshots.build(), null, 1);
       const file = new File([data], "quran-memoriser-backup.json", { type: "application/json" });
       if (navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: "Quran Memoriser backup" }); } catch {}
-      } else {
-        shareBtn.textContent = "Sharing unsupported — use Copy";
+        try { await navigator.share({ files: [file], title: "Quran Memoriser backup" }); return; }
+        catch (err) { if (err?.name === "AbortError") return; }
       }
+      const blobUrl = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "quran-memoriser-backup.json";
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      shareBtn.textContent = "Saved ✓";
+      setTimeout(() => (shareBtn.textContent = "⇪ Share / save file"), 2000);
     });
 
     const copyBtn = el("button", "btn btn-ghost", "Copy to clipboard");
@@ -153,23 +206,48 @@
     row.append(shareBtn, copyBtn);
     card.append(row);
 
-    card.append(el("div", "modal-note", "…or paste a snapshot here:"));
+    card.append(el("div", "modal-note", "…or import a backup file / paste a snapshot here:"));
     const area = el("textarea");
     area.placeholder = '{"app":"quran-memoriser", …}';
     area.style.cssText = "width:100%;height:84px;margin:8px 0;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;background:var(--surface);color:var(--ink);font-size:12px";
+
+    const importRow = el("div", "reciter-actions");
     const importBtn = el("button", "btn btn-play", "Import snapshot");
-    importBtn.addEventListener("click", () => {
+    const runImport = (text, statusTarget) => {
+      const orig = statusTarget.textContent;
       try {
-        snapshots.apply(JSON.parse(area.value));
+        snapshots.apply(JSON.parse(text));
         route();
         renderChips();
-        importBtn.textContent = "Imported ✓";
+        statusTarget.textContent = "Imported ✓";
       } catch {
-        importBtn.textContent = "Invalid snapshot";
+        statusTarget.textContent = "Invalid snapshot";
       }
-      setTimeout(() => (importBtn.textContent = "Import snapshot"), 2000);
+      setTimeout(() => (statusTarget.textContent = orig), 2000);
+    };
+    importBtn.addEventListener("click", () => runImport(area.value, importBtn));
+
+    const fileInput = el("input");
+    fileInput.type = "file";
+    fileInput.accept = ".json,application/json";
+    fileInput.style.display = "none";
+    const fileBtn = el("button", "btn btn-ghost", "Choose backup file…");
+    fileBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const f = fileInput.files?.[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        area.value = text;
+        runImport(text, fileBtn);
+      } catch {
+        fileBtn.textContent = "Could not read file";
+        setTimeout(() => (fileBtn.textContent = "Choose backup file…"), 2000);
+      }
+      fileInput.value = "";
     });
-    card.append(area, importBtn);
+    importRow.append(importBtn, fileBtn, fileInput);
+    card.append(area, importRow);
 
     overlay.append(card);
     document.body.append(overlay);
@@ -183,32 +261,6 @@
     write(p) { localStorage.setItem(this.key, JSON.stringify(p)); },
     get(k, d) { return this.read()[k] ?? d; },
     set(k, v) { const p = this.read(); p[k] = v; this.write(p); },
-  };
-
-  // Per-part "memorised" ticks inside long surahs, e.g. { "2": { "3": true } }
-  const partStore = {
-    key: "qm.parts.v1",
-    read(ch) {
-      try { return (JSON.parse(localStorage.getItem(this.key)) || {})[ch] || {}; } catch { return {}; }
-    },
-    write(ch, m) {
-      let all = {};
-      try { all = JSON.parse(localStorage.getItem(this.key)) || {}; } catch {}
-      if (Object.keys(m).length) all[ch] = m; else delete all[ch];
-      localStorage.setItem(this.key, JSON.stringify(all));
-    },
-    toggle(ch, idx) {
-      const m = this.read(ch);
-      if (m[idx]) delete m[idx]; else m[idx] = true;
-      this.write(ch, m);
-      return !!m[idx];
-    },
-    set(ch, idx, on) {
-      const m = this.read(ch);
-      if (on) m[idx] = true; else delete m[idx];
-      this.write(ch, m);
-      return on;
-    },
   };
 
   // Per-verse memorisation ticks with timestamps: { "2": { "1": <ms> } }.
@@ -281,7 +333,7 @@
   // ---------- offline audio (per-reciter downloads into CacheStorage) ----------
   const AUDIO_STATE_KEY = "qm.audio.v1";
   const cacheName = (reciter) => `qm-audio-${reciter}`;
-  let downloadJobs = {}; // reciter -> { cancelled, done, failed, bytes, previously, total }
+  let downloadJobs = {}; // reciter -> { cancelled, checking, done, failed, bytes, previously, total, onUpdate }
   let playToken = 0;
 
   const audioState = {
@@ -310,19 +362,36 @@
   }
 
   async function startReciterDownload(reciter, rowUpdate) {
-    if (downloadJobs[reciter]) return;
+    if (downloadJobs[reciter]) {
+      downloadJobs[reciter].onUpdate = rowUpdate;
+      return;
+    }
+    if (!surahs.length) return;
     try { await navigator.storage?.persist?.(); } catch {}
-    const job = { cancelled: false, done: 0, failed: 0, bytes: 0, previously: 0, total: 0 };
+    const urls = allVerseUrls(reciter);
+    const job = {
+      cancelled: false,
+      checking: true,
+      done: 0,
+      failed: 0,
+      bytes: 0,
+      previously: 0,
+      total: urls.length,
+      onUpdate: rowUpdate,
+    };
     downloadJobs[reciter] = job;
+    job.onUpdate?.(job, false);
     try {
       const cache = await caches.open(cacheName(reciter));
-      const urls = allVerseUrls(reciter);
-      job.total = urls.length;
+      const existingReqs = await cache.keys();
+      const existingSet = new Set(existingReqs.map((r) => r.url));
       const missing = [];
       for (const u of urls) {
-        if (await cache.match(u)) job.previously++;
+        if (existingSet.has(u)) job.previously++;
         else missing.push(u);
       }
+      job.checking = false;
+      job.onUpdate?.(job, false);
       let idx = 0;
       const CONCURRENCY = 4;
       const workers = Array.from({ length: CONCURRENCY }, async () => {
@@ -331,11 +400,18 @@
           try {
             const r = await fetch(u);
             if (!r.ok) throw new Error("HTTP " + r.status);
-            job.bytes += parseInt(r.headers.get("content-length") || "0", 10);
-            await cache.put(u, r);
+            const len = parseInt(r.headers.get("content-length") || "0", 10);
+            if (len > 0) {
+              job.bytes += len;
+              await cache.put(u, r);
+            } else {
+              const blob = await r.clone().blob();
+              job.bytes += blob.size;
+              await cache.put(u, r);
+            }
             job.done++;
           } catch { job.failed++; }
-          rowUpdate(job);
+          job.onUpdate?.(job, false);
         }
       });
       await Promise.all(workers);
@@ -352,7 +428,7 @@
       bytes: priorBytes + job.bytes,
     };
     audioState.write(st);
-    rowUpdate(job, true);
+    job.onUpdate?.(job, true);
   }
 
   function cancelReciterDownload(reciter) {
@@ -381,7 +457,10 @@
     }
     const overlay = el("div", "modal-overlay");
     overlay.id = "offline-panel";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    bindModalEscape(overlay);
     const card = el("div", "modal-card");
     const close = el("button", "modal-close", "✕");
     close.addEventListener("click", () => overlay.remove());
@@ -400,7 +479,6 @@
       }
     }).catch(() => quotaEl.remove());
 
-    const state = audioState.read();
     for (const [id, name] of Object.entries(RECITERS)) {
       const row = el("div", "reciter-row");
       const info = el("div", "reciter-info");
@@ -415,13 +493,16 @@
       card.append(row);
 
       const paint = (job, finished) => {
+        if (!row.isConnected) return;
         actions.innerHTML = "";
         const st = audioState.read()[id];
         fill.style.width = "0%";
         bar.style.display = "none";
         if (job && !finished) {
           const doneAll = job.previously + job.done;
-          status.textContent = `Downloading… ${doneAll.toLocaleString()} / ${job.total.toLocaleString()} (${fmtPct(doneAll, job.total)})${job.failed ? " · " + job.failed + " failed" : ""}`;
+          status.textContent = job.checking
+            ? "Checking cached verses…"
+            : `Downloading… ${doneAll.toLocaleString()} / ${job.total.toLocaleString()} (${fmtPct(doneAll, job.total)})${job.failed ? " · " + job.failed + " failed" : ""}`;
           bar.style.display = "block";
           fill.style.width = fmtPct(doneAll, job.total);
           const cancelBtn = el("button", "btn btn-stop", "Cancel");
@@ -446,6 +527,7 @@
           actions.append(dl);
         }
       };
+      if (downloadJobs[id]) downloadJobs[id].onUpdate = paint;
       paint(downloadJobs[id], false);
     }
 
@@ -489,17 +571,26 @@
   function syncStatusButtons(ch) {
     const st = statusStore.get(ch);
     const info = statusInfo(st);
+    const meta = surahs.find((s) => s.ch === ch);
+    const ticked = verseStore.count(ch);
     document.querySelectorAll(`.card[data-ch="${ch}"] .status-btn, .chapter-head[data-ch="${ch}"] .status-btn`)
       .forEach((b) => {
         b.dataset.status = st;
         b.innerHTML = `<span class="dot"></span>${esc(info.label)}`;
       });
-    document.querySelectorAll(`.card[data-ch="${ch}"]`).forEach((c) => (c.dataset.status = st));
+    document.querySelectorAll(`.card[data-ch="${ch}"]`).forEach((c) => {
+      c.dataset.status = st;
+      if (meta) {
+        const metaEl = c.querySelector(".surah-meta");
+        if (metaEl) metaEl.innerHTML = `${meta.verses} verses${ticked ? ` · <span class="meta-ticked">${ticked}✓</span>` : ""}`;
+      }
+    });
     renderChips();
   }
 
   // ---------- audio ----------
   function detachAudio() {
+    document.querySelectorAll(".verse-play.loading").forEach((n) => n.classList.remove("loading"));
     if (player.objectUrl) {
       URL.revokeObjectURL(player.objectUrl);
       player.objectUrl = null;
@@ -510,21 +601,34 @@
     }
   }
 
+  function syncPartPlayButtons() {
+    document.querySelectorAll(".part-play[data-part-play]").forEach((b) => {
+      const pIdx = +b.dataset.partPlay;
+      const active = player.continuous && player.partIndex === pIdx;
+      b.textContent = active ? "■ Stop part" : "▶ Play part";
+      b.classList.toggle("btn-stop", active);
+    });
+  }
+
   function stopPlayback() {
+    ++playToken;
     detachAudio();
     if (player.gapTimer) { clearTimeout(player.gapTimer); player.gapTimer = null; }
     player.continuous = false;
     player.chapter = null;
     player.verseIndex = -1;
     player.endIndex = -1;
+    player.partIndex = null;
     player.currentCh = null;
     player.currentV = null;
+    player.errorStreak = 0;
     document.querySelectorAll(".verse.playing").forEach((n) => n.classList.remove("playing"));
     const btn = document.getElementById("play-chapter-btn");
     if (btn) {
       btn.textContent = "▶ Play chapter";
       btn.classList.replace("btn-stop", "btn-play");
     }
+    syncPartPlayButtons();
   }
 
   function highlightVerse(ch, n) {
@@ -538,50 +642,72 @@
 
   async function playVerse(ch, n, { continuous = false } = {}) {
     detachAudio();
+    if (player.gapTimer) { clearTimeout(player.gapTimer); player.gapTimer = null; }
     const token = ++playToken;
+    player.continuous = continuous;
+    player.currentCh = ch;
+    player.currentV = n;
+    const playBtn = document.querySelector(`.verse[data-v="${n}"][data-ch="${ch}"] .verse-play`);
+    if (playBtn) playBtn.classList.add("loading");
     const reciter = prefs.get("reciter", "ashiq");
     const resolved = await resolveAudioUrl(ch, n, reciter);
     if (token !== playToken) {
       if (resolved.objectUrl) URL.revokeObjectURL(resolved.url);
+      if (playBtn) playBtn.classList.remove("loading");
       return;
     }
     const audio = new Audio(resolved.url);
     player.audio = audio;
     player.objectUrl = resolved.objectUrl ? resolved.url : null;
-    player.continuous = continuous;
-    player.currentCh = ch;
-    player.currentV = n;
+    const clearLoading = () => { if (playBtn) playBtn.classList.remove("loading"); };
     audio.addEventListener("waiting", () => highlightVerse(ch, n));
-    audio.addEventListener("playing", () => highlightVerse(ch, n));
+    audio.addEventListener("playing", () => {
+      clearLoading();
+      player.errorStreak = 0;
+      highlightVerse(ch, n);
+    });
     // ignore events from an audio element we have already replaced
     const isCurrent = () => player.audio === audio;
     audio.addEventListener("ended", () => {
       if (!isCurrent()) return;
+      clearLoading();
       if (player.continuous) advanceContinuous();
       else stopPlayback();
     });
     audio.addEventListener("error", () => {
       if (!isCurrent()) return;
-      if (player.continuous) advanceContinuous();
-      else stopPlayback();
+      clearLoading();
+      player.errorStreak = (player.errorStreak || 0) + 1;
+      if (!player.continuous || !navigator.onLine || player.errorStreak >= 3) {
+        stopPlayback();
+      } else {
+        advanceContinuous();
+      }
     });
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      if (!isCurrent()) return;
+      clearLoading();
+      stopPlayback();
+    });
     highlightVerse(ch, n);
   }
 
-  function startContinuous(ch, fromIndex = 0, endIndex = null) {
+  function startContinuous(ch, fromIndex = 0, endIndex = null, partIndex = null) {
     const data = chapterCache[ch];
     if (!data || !data.verses.length) return;
     player.chapter = ch;
     player.verseIndex = fromIndex;
     player.endIndex = endIndex === null ? data.verses.length - 1 : endIndex;
+    player.partIndex = partIndex;
     player.repeatLeft = repeats();
+    player.errorStreak = 0;
     playVerse(ch, data.verses[fromIndex].n, { continuous: true });
     const btn = document.getElementById("play-chapter-btn");
     if (btn) {
       btn.textContent = "■ Stop";
       btn.classList.replace("btn-play", "btn-stop");
     }
+    syncPartPlayButtons();
   }
 
   function repeats() {
@@ -591,26 +717,28 @@
   function advanceContinuous() {
     const data = chapterCache[player.chapter];
     if (!data) return stopPlayback();
-    if (player.repeatLeft > 1) {
-      player.repeatLeft -= 1;
-      const cur = data.verses[player.verseIndex];
-      if (!cur) return stopPlayback();
-      const gap = parseInt(prefs.get("repeatGap", "0"), 10) || 0;
-      if (gap > 0) {
-        // recite pause: silence after each replay so you can say the verse yourself
-        player.gapTimer = setTimeout(() => {
-          player.gapTimer = null;
-          if (player.continuous) playVerse(player.chapter, cur.n, { continuous: true });
-        }, gap * 1000);
-        return;
+    const step = () => {
+      player.gapTimer = null;
+      if (!player.continuous) return;
+      if (player.repeatLeft > 1) {
+        player.repeatLeft -= 1;
+        const cur = data.verses[player.verseIndex];
+        if (!cur) return stopPlayback();
+        return playVerse(player.chapter, cur.n, { continuous: true });
       }
-      return playVerse(player.chapter, cur.n, { continuous: true });
+      player.verseIndex += 1;
+      player.repeatLeft = repeats();
+      const next = data.verses[player.verseIndex];
+      if (!next || player.verseIndex > player.endIndex) return stopPlayback();
+      playVerse(player.chapter, next.n, { continuous: true });
+    };
+    const gap = parseInt(prefs.get("repeatGap", "0"), 10) || 0;
+    if (gap > 0) {
+      // recite pause: silence after each verse play so you can recite the verse yourself
+      player.gapTimer = setTimeout(step, gap * 1000);
+      return;
     }
-    player.verseIndex += 1;
-    player.repeatLeft = repeats();
-    const next = data.verses[player.verseIndex];
-    if (!next || player.verseIndex > player.endIndex) return stopPlayback();
-    playVerse(player.chapter, next.n, { continuous: true });
+    step();
   }
 
   // ---------- practice mode (recall masking + letter hints) ----------
@@ -623,7 +751,7 @@
   function firstLettersHint(ar) {
     const isBase = (c) => {
       const x = c.codePointAt(0);
-      return (x >= 0x0621 && x <= 0x064a) || (x >= 0x0671 && x <= 0x06d3) || x === 0x0640;
+      return (x >= 0x0621 && x <= 0x064a) || (x >= 0x0671 && x <= 0x06d3) || x === 0x0640 || x === 0x066e;
     };
     const isMark = (c) => {
       const x = c.codePointAt(0);
@@ -676,7 +804,6 @@
   }
 
   function applyPracticeToDom() {
-    const view = document.getElementById("view");
     document.body.classList.toggle("practice", practice.on);
     document.querySelectorAll(".verse").forEach((row) => {
       const n = +row.dataset.v;
@@ -708,7 +835,8 @@
   // ---------- transliteration (transliteration.org, lazy-loaded per chapter) ----------
   const translitCache = {}; // ch -> {byVerse: {n: tl}, missing: bool}
   async function loadTranslit(ch) {
-    if (translitCache[ch]) return !translitCache[ch].missing;
+    if (translitCache[ch] && !translitCache[ch].missing) return true;
+    if (translitCache[ch]?.missing && !navigator.onLine) return false;
     try {
       const r = await fetch(`data/translit/${ch}.json`);
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -723,6 +851,19 @@
     }
   }
 
+  function injectTranslitInDom(ch) {
+    const map = translitCache[ch]?.byVerse;
+    if (!map) return;
+    document.querySelectorAll(`.verse[data-ch="${ch}"]`).forEach((row) => {
+      if (row.querySelector(".verse-tl")) return;
+      const tl = map[+row.dataset.v];
+      if (!tl) return;
+      const tlEl = el("div", "verse-tl", esc(tl));
+      const arEl = row.querySelector(".verse-ar");
+      if (arEl) arEl.after(tlEl);
+    });
+  }
+
   // ---------- chapter ↔ verse rules ----------
   // The chapter status and its verse ticks are one state seen from two levels:
   //   Memorised ⟺ every verse ticked · Partial ⟺ some ticked (or a coarse
@@ -730,6 +871,8 @@
   // Each level moves the other: verse ticks roll the status up; resting the
   // button on Memorised / Not set rolls the ticks to match. Cycling through
   // a status never commits — only stopping on one does.
+  let activeChapterRefresh = null;
+
   function rollupChapterStatus(ch) {
     const meta = surahs.find((s) => s.ch === ch);
     const total = meta ? meta.verses : 0;
@@ -762,10 +905,9 @@
     if (!changed) return;
     if (Object.keys(m).length) all[ch] = m; else delete all[ch];
     verseStore.writeAllRaw(all);
-    // the open chapter view (if any) shows the verse layer following the status
-    if (currentChapter === ch) {
-      chapterScrollY[ch] = window.scrollY;
-      renderChapter(ch);
+    syncStatusButtons(ch);
+    if (currentChapter === ch && activeChapterRefresh) {
+      activeChapterRefresh();
     }
   }
 
@@ -775,14 +917,14 @@
     statusSideEffectTimers.set(ch, setTimeout(() => {
       statusSideEffectTimers.delete(ch);
       applyStatusSideEffects(ch);
-    }, 500));
+    }, 800));
   }
 
   // ---------- shared components ----------
-  function statusButton(ch, { small = false } = {}) {
+  function statusButton(ch) {
     const cur = statusStore.get(ch);
     const info = statusInfo(cur);
-    const btn = el("button", "status-btn" + (small ? " small" : ""));
+    const btn = el("button", "status-btn");
     btn.dataset.status = cur;
     btn.innerHTML = `<span class="dot"></span>${esc(info.label)}`;
     btn.title = "Cycle: Not set → Memorised → Partial → Next → Later";
@@ -800,15 +942,17 @@
 
   function renderChips() {
     const holder = document.getElementById("progress-chips");
+    if (!holder) return;
     const map = statusStore.read();
     const counts = { done: 0, partial: 0, next: 0, later: 0 };
     let vDone = 0, vPartial = 0, vNext = 0, vLater = 0;
     for (const s of surahs) {
       const st = map[s.ch];
+      const ticked = verseStore.count(s.ch);
+      vDone += st === "done" ? s.verses : ticked;
       if (st && counts[st] !== undefined) {
         counts[st]++;
-        if (st === "done") vDone += s.verses;
-        if (st === "partial") vPartial += s.verses;
+        if (st === "partial") vPartial += Math.max(0, s.verses - ticked) || s.verses;
         if (st === "next") vNext += s.verses;
         if (st === "later") vLater += s.verses;
       }
@@ -825,6 +969,7 @@
   // ---------- views ----------
   function renderGrid(restoreScrollY) {
     stopPlayback();
+    activeChapterRefresh = null;
     const view = document.getElementById("view");
     view.innerHTML = "";
 
@@ -888,6 +1033,7 @@
   // ---------- about page ----------
   function renderAbout() {
     stopPlayback();
+    activeChapterRefresh = null;
     const view = document.getElementById("view");
     view.innerHTML = "";
 
@@ -1082,16 +1228,22 @@
       translitBtn.classList.toggle("on", on);
       if (on) {
         const ok = await loadTranslit(ch);
-        if (!ok) translitBtn.textContent = "Unavailable";
-        route(); // re-render with transliteration lines
+        if (!ok) {
+          translitBtn.textContent = "Unavailable";
+        } else {
+          translitBtn.textContent = "Transliteration";
+          injectTranslitInDom(ch);
+        }
       } else {
         translitBtn.textContent = "Transliteration";
       }
     });
-    // Lazy-load on first entry into a chapter; the guard is what stops
-    // loadTranslit -> route() -> renderChapter -> loadTranslit … from looping.
     if (document.body.classList.contains("show-translit") && !translitCache[ch]) {
-      loadTranslit(ch).then(() => route());
+      loadTranslit(ch).then((ok) => {
+        if (currentChapter !== ch) return;
+        if (!ok) translitBtn.textContent = "Unavailable";
+        else injectTranslitInDom(ch);
+      });
     }
 
     // practice: hide the Arabic so you recite from memory, then tap to check
@@ -1112,10 +1264,11 @@
       const b = el("button", "filter-btn" + (prefs.get("hintLevel", "hidden") === id ? " active" : ""), label);
       b.addEventListener("click", () => {
         prefs.set("hintLevel", id);
-        practiceTools.querySelectorAll(".filter-btn").forEach((x) => x.classList.remove("active"));
+        practiceTools.querySelectorAll(".filter-btn[data-hint]").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         remaskAll();
       });
+      b.dataset.hint = id;
       return b;
     };
     const resetMasks = el("button", "filter-btn", "Reset masks");
@@ -1175,9 +1328,10 @@
       }
     };
     const refreshPartUi = (p) => {
-      const done = data.verses.slice(p.start, p.end + 1).filter((v) => verseStore.get(ch, v.n)).length;
+      const m = verseStore.read(ch);
+      let done = 0;
+      for (let i = p.start; i <= p.end; i++) if (m[data.verses[i].n]) done++;
       const on = done === partVerseCount(p);
-      partStore.set(ch, p.i, on);
       const ph = view.querySelector(`.part-header[data-part="${p.i}"]`);
       if (ph) {
         const tickBtn = ph.querySelector(".part-tick");
@@ -1194,8 +1348,7 @@
         }
       }
       if (partProgress) {
-        const fresh = partStore.read(ch);
-        const dn = parts.filter((q) => fresh[q.i]).length;
+        const dn = parts.filter((q) => partComplete(q)).length;
         partProgress.innerHTML = `Memorisation parts: <b>${dn}/${parts.length}</b> done · ~${PART_TARGET_WORDS} words each`;
       }
     };
@@ -1210,6 +1363,15 @@
       const p = partOfVerse[v.n];
       if (p) refreshPartUi(p);
       applyChapterRollup();
+    };
+
+    activeChapterRefresh = () => {
+      const m = verseStore.read(ch);
+      view.querySelectorAll(".verse").forEach((r) => {
+        setVerseRowUi(r, !!m[+r.dataset.v]);
+      });
+      for (const p of parts) refreshPartUi(p);
+      refreshChapterMeta();
     };
 
     for (let idx = 0; idx < data.verses.length; idx++) {
@@ -1240,12 +1402,13 @@
           applyChapterRollup();
         });
         const playPart = el("button", "part-play", "▶ Play part");
+        playPart.dataset.partPlay = p.i;
         playPart.addEventListener("click", () => {
-          if (player.continuous && player.verseIndex >= p.start && player.verseIndex <= p.end && player.chapter === ch) {
+          if (player.continuous && player.partIndex === p.i && player.chapter === ch) {
             stopPlayback();
             return;
           }
-          startContinuous(ch, p.start, p.end);
+          startContinuous(ch, p.start, p.end, p.i);
         });
         const practicePart = el("button", "part-play", "◔ Practice part");
         practicePart.addEventListener("click", () => {
@@ -1272,24 +1435,12 @@
       const play = el("button", "verse-play", "▶");
       play.title = `Play ${ch}:${v.n}`;
       play.addEventListener("click", () => {
-        if (player.audio && player.currentCh === ch && player.currentV === v) {
+        if ((player.audio || player.gapTimer) && player.currentCh === ch && player.currentV === v.n) {
           stopPlayback();
           return;
         }
         // a single-verse drill session: honours Repeat ×N and the recite pause
-        player.chapter = ch;
-        player.verseIndex = idx;
-        player.endIndex = idx;
-        player.repeatLeft = repeats();
-        playVerse(ch, v.n, { continuous: true });
-        const chapterBtn = document.getElementById("play-chapter-btn");
-        if (chapterBtn) {
-          chapterBtn.textContent = "■ Stop";
-          chapterBtn.classList.replace("btn-play", "btn-stop");
-        }
-        play.classList.add("loading");
-        const clear = () => play.classList.remove("loading");
-        if (player.audio) { player.audio.addEventListener("playing", clear, { once: true }); player.audio.addEventListener("error", clear, { once: true }); }
+        startContinuous(ch, idx, idx, null);
       });
       top.append(play, tickBtn, el("span", "verse-ref", `${ch}:${v.n}`));
       row.append(top);
@@ -1375,7 +1526,7 @@
   document.getElementById("export-btn")?.addEventListener("click", renderExportPanel);
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
-  window.__qm = { statusStore, verseStore }; // debug/verification hook
+  window.__qm = { statusStore, verseStore, snapshots }; // debug/verification hook
 
   // Service worker makes the app installable and fully offline (needs a
   // secure context: https or localhost — silently skipped on plain LAN IPs).

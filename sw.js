@@ -6,7 +6,7 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const CACHE = "qm-app-v3";
+const CACHE = "qm-app-v4";
 const CORE = [
   "./",
   "index.html",
@@ -20,15 +20,21 @@ const CORE = [
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
 ];
+const TRANSLIT_CHS = [1, ...Array.from({ length: 37 }, (_, i) => i + 78)];
 const CACHE_FIRST = /(\/|^)(data|assets|icons)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE);
-    await Promise.all(Array.from({ length: 114 }, (_, i) =>
-      cache.add(`data/chapters/${i + 1}.json`).catch(() => {})
-    ));
+    await Promise.all([
+      ...Array.from({ length: 114 }, (_, i) =>
+        cache.add(`data/chapters/${i + 1}.json`).catch(() => {})
+      ),
+      ...TRANSLIT_CHS.map((ch) =>
+        cache.add(`data/translit/${ch}.json`).catch(() => {})
+      ),
+    ]);
     self.skipWaiting();
   })());
 });
@@ -58,9 +64,11 @@ self.addEventListener("fetch", (event) => {
       return fresh;
     } catch (err) {
       if (cached) return cached;
-      const fallback = await cache.match("./");
-      if (fallback) return fallback;
-      throw err;
+      if (event.request.mode === "navigate" || event.request.destination === "document") {
+        const fallback = await cache.match("./");
+        if (fallback) return fallback;
+      }
+      return new Response("Offline", { status: 503, statusText: "Offline" });
     }
   })());
 });

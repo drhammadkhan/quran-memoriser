@@ -511,6 +511,12 @@ main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 22px 20
   font-weight: 700;
 }
 
+.part-play.btn-stop {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .part-play:hover { opacity: 0.88; }
 }
@@ -713,11 +719,16 @@ a.topbar-btn { text-decoration: none; }
   background: var(--band);
   border: 1px dashed var(--border-strong);
   border-radius: 8px;
+  padding: 4px 10px;
+  overflow: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
 .ar-mask-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  direction: ltr;
+  line-height: 1.4;
   font-size: 12px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
@@ -730,9 +741,13 @@ a.topbar-btn { text-decoration: none; }
   line-height: 2.15;
   color: var(--ink);
   opacity: 0.85;
+  width: 100%;
+  text-align: right;
+  direction: rtl;
 }
 
 .verse.masked .verse-ar { min-height: 52px; }
+body.show-translit .verse.masked .verse-tl { display: none; }
 
 @media (hover: hover) and (pointer: fine) {
   .ar-mask:hover { border-color: var(--accent); }
