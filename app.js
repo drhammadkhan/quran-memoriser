@@ -1145,8 +1145,10 @@
       const cur = statusStore.get(ch);
       if (done === totalVerses) {
         if (cur !== "done") statusStore.set(ch, "done");
-      } else if (cur === "done") {
-        statusStore.set(ch, "partial");
+      } else if (done > 0 || cur === "done") {
+        // some verses memorised → the chapter is partial; a "done" chapter
+        // that lost verses drops to partial even at zero
+        if (cur !== "partial") statusStore.set(ch, "partial");
       }
       syncStatusButtons(ch);
       refreshChapterMeta();
