@@ -700,6 +700,24 @@
     });
   }
 
+  // ---------- transliteration (transliteration.org, lazy-loaded per chapter) ----------
+  const translitCache = {}; // ch -> {byVerse: {n: tl}, missing: bool}
+  async function loadTranslit(ch) {
+    if (translitCache[ch]) return !translitCache[ch].missing;
+    try {
+      const r = await fetch(`data/translit/${ch}.json`);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      const byVerse = {};
+      for (const v of d.verses || []) byVerse[v.n] = v.tl;
+      translitCache[ch] = { byVerse };
+      return true;
+    } catch {
+      translitCache[ch] = { byVerse: {}, missing: true };
+      return false;
+    }
+  }
+
   // ---------- shared components ----------
   function statusButton(ch, { small = false } = {}) {
     const cur = statusStore.get(ch);
@@ -906,6 +924,23 @@
       wordsBtn.classList.toggle("on", document.body.classList.contains("show-words"));
     });
 
+    // Latin transliteration (transliteration.org; covers the short surahs)
+    const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Aa Transliteration");
+    translitBtn.title = "Latin transliteration (transliteration.org) — available for the short surahs";
+    translitBtn.addEventListener("click", async () => {
+      document.body.classList.toggle("show-translit");
+      const on = document.body.classList.contains("show-translit");
+      translitBtn.classList.toggle("on", on);
+      if (on) {
+        const ok = await loadTranslit(ch);
+        if (!ok) translitBtn.textContent = "Aa Unavailable";
+        route(); // re-render with transliteration lines
+      } else {
+        translitBtn.textContent = "Aa Transliteration";
+      }
+    });
+    if (document.body.classList.contains("show-translit")) loadTranslit(ch).then(() => route());
+
     // practice: hide the Arabic so you recite from memory, then tap to check
     practice = { on: false, from: null, to: null };
     const practiceBtn = el("button", "btn btn-ghost", "◔ Practice");
@@ -934,7 +969,7 @@
     resetMasks.addEventListener("click", remaskAll);
     practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("letters", "First letters"), resetMasks);
 
-    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, wordsBtn, practiceBtn);
+    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, wordsBtn, translitBtn, practiceBtn);
     head.append(controls, practiceTools);
 
     // Memorisation parts (long surahs only): a strip of chips plus a tick per part.
@@ -1114,6 +1149,8 @@
       row.append(top);
 
       row.append(el("div", "verse-ar", esc(v.ar)));
+      const tl = translitCache[ch]?.byVerse?.[v.n];
+      if (tl) row.append(el("div", "verse-tl", esc(tl)));
       row.append(el("div", "verse-en", v.en ? rich(v.en) : "—"));
       const words = (v.w || []).filter(Boolean);
       if (words.length) row.append(el("div", "verse-words", esc(words.join(" · "))));
