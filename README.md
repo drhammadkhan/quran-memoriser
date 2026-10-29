@@ -30,7 +30,7 @@ Easiest HTTPS hosting: drag the `quran-memoriser` folder onto [Netlify Drop](htt
   🟢 **Memorised** → 🩷 **Partial** → 🟠 **Next** → 🔵 **Later** → Not set.
   Saved in your browser (localStorage) and filterable from the toolbar; the header shows running progress.
 - **Chapter ↔ verse rules** — the chapter status and its verse ticks are one state seen from two levels, and each level moves the other. Marking a chapter Memorised ticks all of its verses; clearing it back to Not set unticks them; stopping on Partial/Next/Later leaves the ticks untouched (a coarse claim). From the verse side, ticking any verses marks the chapter Partial, ticking them all marks it Memorised, and unticking your last ticked verse returns it to Not set. Cycling through a status without stopping on it never touches the verses.
-- **Chapter view** — every verse in Arabic (Manzoor Naskh font, as used by alislam.org's own Quran app) with the English translation by Maulawi Sher Ali, plus a per-verse **word meanings** toggle.
+- **Chapter view** — every verse in Arabic (Manzoor Naskh font, as used by alislam.org's own Quran app) with the English translation by Maulawi Sher Ali, plus per-verse **word meanings** and **Latin transliteration** toggles across all 114 chapters.
 - **Backup & transfer** — the "⇪ Backup" button exports your progress as a snapshot: share it as a file (iOS share sheet), copy it to the clipboard, or paste a snapshot back to import. Importing merges — the newer state of each chapter and verse wins, and un-ticks carry over. No accounts, no servers; your data stays in each device's browser unless you move it.
 - **Practice mode (active memorisation)** — the "◔ Practice" button on a chapter (or "◔ Practice part" on any part header) hides the Arabic behind tap-to-reveal masks so you recite from memory and check yourself. The prompt level is adjustable: fully blank, or **first letters of every Arabic word** (the classic hifz prompt). Combined with the **Recite pause** setting (2–10s) and **Repeat ×N**, the verse or part player becomes a listen-and-repeat drill: hear the verse, the app falls silent for your pause while you recite, then it plays again.
 - **Verse-level tracking** — every verse has a ✓ button. Tick verses as you memorise them; the chapter status follows the rules above. Unticking a verse un-completes its part. Ticking a part marks all its verses in one go. The chapter page shows live "n/N verses memorised", and chapter cards on the home page show their ticked-verse count.
@@ -45,6 +45,7 @@ Easiest HTTPS hosting: drag the `quran-memoriser` folder onto [Netlify Drop](htt
 | Asset | Source |
 |---|---|
 | Arabic text + Sher Ali English translation | `api.readquran.app` — the API behind alislam.org's official Quran app ([alislam.org/quran/app](https://alislam.org/quran/app/1?options=en)) |
+| Latin transliteration | `transliteration.org` (`WebSite_CD/MixPure`), aligned to alislam.org's verse numbering across all 114 chapters |
 | Recitation audio (per verse) | `files.alislam.cloud/audio/tilawat/<reciter>/<chapter>-<verse>-AR.mp3` |
 | Manzoor Naskh font | alislam.org's Quran app assets |
 
@@ -55,6 +56,7 @@ Verse numbering follows alislam.org's Quran (6,348 verses — in their numbering
 - `index.html` / `styles.css` / `app.js` — the app (no build step, no dependencies)
 - `data/surahs.json` — 114 chapter metadata records
 - `data/chapters/1.json … 114.json` — verses (Arabic, English, word glosses), downloaded by `download-data.py`
+- `data/translit/1.json … 114.json` — Latin transliteration for all 114 chapters, fetched and aligned by `fetch-translit.py`
 - `assets/ManzoorNaskh.ttf` — Arabic font from alislam.org
 
 To re-download or refresh the text data: `python3 download-data.py`

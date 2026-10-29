@@ -1105,7 +1105,7 @@
           <li>Arabic text and the English translation (Maulawi Sher Ali) — alislam.org's Quran
           app, served via its data API</li>
           <li>Recitation audio — files.alislam.cloud (Ahmadiyya Muslim Community)</li>
-          <li>Latin transliteration, shown for the short surahs — transliteration.org</li>
+          <li>Latin transliteration — transliteration.org</li>
           <li>Manzoor Naskh Arabic font — alislam.org's Quran app assets</li>
         </ul>
         <p class="note">Verse numbering follows alislam.org's Quran — 6,348 verses, where the
@@ -1218,10 +1218,10 @@
       wordsBtn.classList.toggle("on", document.body.classList.contains("show-words"));
     });
 
-    // Latin transliteration (transliteration.org; covers the short surahs)
+    // Latin transliteration (transliteration.org; covers all 114 surahs)
     const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Transliteration");
     if (document.body.classList.contains("show-translit") && translitCache[ch]?.missing) translitBtn.textContent = "Unavailable";
-    translitBtn.title = "Latin transliteration (transliteration.org) — available for the short surahs";
+    translitBtn.title = "Toggle Latin transliteration (transliteration.org)";
     translitBtn.addEventListener("click", async () => {
       document.body.classList.toggle("show-translit");
       const on = document.body.classList.contains("show-translit");

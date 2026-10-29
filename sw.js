@@ -6,7 +6,7 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const CACHE = "qm-app-v4";
+const CACHE = "qm-app-v5";
 const CORE = [
   "./",
   "index.html",
@@ -20,21 +20,18 @@ const CORE = [
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
 ];
-const TRANSLIT_CHS = [1, ...Array.from({ length: 37 }, (_, i) => i + 78)];
 const CACHE_FIRST = /(\/|^)(data|assets|icons)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE);
-    await Promise.all([
-      ...Array.from({ length: 114 }, (_, i) =>
-        cache.add(`data/chapters/${i + 1}.json`).catch(() => {})
-      ),
-      ...TRANSLIT_CHS.map((ch) =>
-        cache.add(`data/translit/${ch}.json`).catch(() => {})
-      ),
-    ]);
+    await Promise.all(Array.from({ length: 114 }, (_, i) =>
+      Promise.all([
+        cache.add(`data/chapters/${i + 1}.json`).catch(() => {}),
+        cache.add(`data/translit/${i + 1}.json`).catch(() => {}),
+      ])
+    ));
     self.skipWaiting();
   })());
 });
