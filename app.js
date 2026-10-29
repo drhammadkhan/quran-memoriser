@@ -1145,10 +1145,13 @@
       const cur = statusStore.get(ch);
       if (done === totalVerses) {
         if (cur !== "done") statusStore.set(ch, "done");
-      } else if (done > 0 || cur === "done") {
-        // some verses memorised → the chapter is partial; a "done" chapter
-        // that lost verses drops to partial even at zero
+      } else if (done > 0) {
+        // some verses memorised → the chapter is partial
         if (cur !== "partial") statusStore.set(ch, "partial");
+      } else if (cur === "partial" || cur === "done") {
+        // unticking the last verse returns the chapter to Not set;
+        // statuses the rollup never manages (next/later) are left alone
+        statusStore.set(ch, "");
       }
       syncStatusButtons(ch);
       refreshChapterMeta();
