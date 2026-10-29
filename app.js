@@ -1073,8 +1073,8 @@
     });
 
     // Latin transliteration (transliteration.org; covers the short surahs)
-    const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Aa Transliteration");
-    if (document.body.classList.contains("show-translit") && translitCache[ch]?.missing) translitBtn.textContent = "Aa Unavailable";
+    const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Transliteration");
+    if (document.body.classList.contains("show-translit") && translitCache[ch]?.missing) translitBtn.textContent = "Unavailable";
     translitBtn.title = "Latin transliteration (transliteration.org) — available for the short surahs";
     translitBtn.addEventListener("click", async () => {
       document.body.classList.toggle("show-translit");
@@ -1082,10 +1082,10 @@
       translitBtn.classList.toggle("on", on);
       if (on) {
         const ok = await loadTranslit(ch);
-        if (!ok) translitBtn.textContent = "Aa Unavailable";
+        if (!ok) translitBtn.textContent = "Unavailable";
         route(); // re-render with transliteration lines
       } else {
-        translitBtn.textContent = "Aa Transliteration";
+        translitBtn.textContent = "Transliteration";
       }
     });
     // Lazy-load on first entry into a chapter; the guard is what stops
