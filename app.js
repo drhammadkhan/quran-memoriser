@@ -829,6 +829,90 @@
     window.scrollTo({ top: typeof restoreScrollY === "number" ? restoreScrollY : 0, behavior: "instant" });
   }
 
+  // ---------- about page ----------
+  function renderAbout() {
+    stopPlayback();
+    const view = document.getElementById("view");
+    view.innerHTML = "";
+
+    const crumb = el("a", "crumb", "← All chapters");
+    crumb.href = "#/";
+    view.append(crumb);
+
+    const reciters = Object.values(RECITERS).join(", ");
+    const wrap = el("div", "about");
+    wrap.innerHTML = `
+      <h1 class="about-title">Quran Memoriser</h1>
+      <p class="about-lede">A quiet companion for memorising the Quran: all 114 chapters with
+      Arabic text, the English translation of Maulawi Sher Ali, per-verse recitation, and
+      word-by-word meanings. Everything runs in your browser — no accounts, no servers — and
+      once the app has loaded it works entirely offline.</p>
+
+      <section>
+        <h2>Tracking</h2>
+        <p>Every chapter carries a status button that cycles
+        <b style="color:var(--green)">Memorised</b> →
+        <b style="color:var(--pink)">Partial</b> →
+        <b style="color:var(--orange)">Next</b> →
+        <b style="color:var(--blue)">Later</b> → not set.
+        Track at whatever granularity suits you: whole chapters, or verse by verse with the ✓
+        on each verse. Long chapters are split into <b>parts</b> of about 150 Arabic words —
+        roughly half a mushaf page, one memorisation sitting — with their own tick and player.</p>
+        <p>Progress joins up on its own: tick every verse of a part and the part completes;
+        complete every part and the chapter turns Memorised. Unticking walks it back the same way.</p>
+      </section>
+
+      <section>
+        <h2>Practice mode</h2>
+        <p>The ◔ Practice button hides the Arabic behind tap-to-reveal masks so you recite from
+        memory and check yourself. Choose a fully blank prompt or the classic hifz prompt — the
+        first letters of every word — and drill a single part or the whole chapter. Combined with
+        Repeat ×N and the Recite pause, the player becomes a listen-and-repeat exercise: hear the
+        verse, recite into the silence, hear it again.</p>
+      </section>
+
+      <section>
+        <h2>Audio</h2>
+        <p>Verse-by-verse recitation by ${esc(reciters)}, streamed from files.alislam.cloud.
+        The ⤓ Offline audio panel can store any reciter (about 1.5&nbsp;GB) on the device so it
+        plays without a connection; anything not downloaded still streams on demand.</p>
+      </section>
+
+      <section>
+        <h2>Install it on your phone</h2>
+        <p>Open the site in your browser and add it to your home screen —
+        <b>Android (Chrome):</b> menu → Add to Home screen;
+        <b>iPhone/iPad (Safari):</b> Share → Add to Home Screen.
+        The app then precaches its shell, all 114 chapters and the Arabic font, and runs offline
+        from its own icon.</p>
+      </section>
+
+      <section>
+        <h2>Backup &amp; transfer</h2>
+        <p>Your progress never leaves the device it was made on unless you move it. The ⇪ Backup
+        button exports a snapshot you can share as a file, copy to the clipboard, or paste back
+        in on another device. Importing merges: the newer state of each chapter and verse wins.</p>
+      </section>
+
+      <section>
+        <h2>Sources &amp; credits</h2>
+        <ul>
+          <li>Arabic text and the English translation (Maulawi Sher Ali) — alislam.org's Quran
+          app, served via its data API</li>
+          <li>Recitation audio — files.alislam.cloud (Ahmadiyya Muslim Community)</li>
+          <li>Latin transliteration, shown for the short surahs — transliteration.org</li>
+          <li>Manzoor Naskh Arabic font — alislam.org's Quran app assets</li>
+        </ul>
+        <p class="note">Verse numbering follows alislam.org's Quran — 6,348 verses, where the
+        Bismillah is verse 1 of every chapter except At-Tawbah (so Al-Baqarah has 287 verses).
+        This matches the recitation audio exactly.</p>
+      </section>`;
+
+    view.append(wrap);
+    renderChips();
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   async function renderChapter(ch) {
     const view = document.getElementById("view");
     const meta = surahs.find((s) => s.ch === ch);
@@ -1185,6 +1269,12 @@
       viewIsGrid = false;
       currentChapter = parseInt(m[1], 10);
       renderChapter(currentChapter);
+    } else if (location.hash === "#/about") {
+      if (viewIsGrid) gridScrollY = window.scrollY;
+      else if (currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
+      viewIsGrid = false;
+      currentChapter = null;
+      renderAbout();
     } else {
       if (!viewIsGrid && currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
       const y = viewIsGrid ? undefined : gridScrollY;
