@@ -926,6 +926,7 @@
 
     // Latin transliteration (transliteration.org; covers the short surahs)
     const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Aa Transliteration");
+    if (document.body.classList.contains("show-translit") && translitCache[ch]?.missing) translitBtn.textContent = "Aa Unavailable";
     translitBtn.title = "Latin transliteration (transliteration.org) — available for the short surahs";
     translitBtn.addEventListener("click", async () => {
       document.body.classList.toggle("show-translit");
@@ -939,7 +940,11 @@
         translitBtn.textContent = "Aa Transliteration";
       }
     });
-    if (document.body.classList.contains("show-translit")) loadTranslit(ch).then(() => route());
+    // Lazy-load on first entry into a chapter; the guard is what stops
+    // loadTranslit -> route() -> renderChapter -> loadTranslit … from looping.
+    if (document.body.classList.contains("show-translit") && !translitCache[ch]) {
+      loadTranslit(ch).then(() => route());
+    }
 
     // practice: hide the Arabic so you recite from memory, then tap to check
     practice = { on: false, from: null, to: null };
