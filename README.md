@@ -45,7 +45,6 @@ Easiest HTTPS hosting: drag the `quran-memoriser` folder onto [Netlify Drop](htt
 | Asset | Source |
 |---|---|
 | Arabic text + Sher Ali English translation | `api.readquran.app` — the API behind alislam.org's official Quran app ([alislam.org/quran/app](https://alislam.org/quran/app/1?options=en)) |
-| Latin transliteration | `transliteration.org` (`WebSite_CD/MixPure`), aligned to alislam.org's verse numbering across all 114 chapters |
 | Recitation audio (per verse) | `files.alislam.cloud/audio/tilawat/<reciter>/<chapter>-<verse>-AR.mp3` |
 | Manzoor Naskh font | alislam.org's Quran app assets |
 
@@ -56,7 +55,7 @@ Verse numbering follows alislam.org's Quran (6,348 verses — in their numbering
 - `index.html` / `styles.css` / `app.js` — the app (no build step, no dependencies)
 - `data/surahs.json` — 114 chapter metadata records
 - `data/chapters/1.json … 114.json` — verses (Arabic, English, word glosses), downloaded by `download-data.py`
-- `data/translit/1.json … 114.json` — Latin transliteration for all 114 chapters, fetched and aligned by `fetch-translit.py`
+- `data/translit/1.json … 114.json` — Latin transliteration for all 114 chapters
 - `assets/ManzoorNaskh.ttf` — Arabic font from alislam.org
 
 To re-download or refresh the text data: `python3 download-data.py`
