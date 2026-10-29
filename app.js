@@ -694,9 +694,14 @@
   }
 
   function remaskAll() {
-    document.querySelectorAll(".verse.masked").forEach((row) => {
-      unmaskVerse(row);
-      maskVerse(row);
+    // Re-mask the whole practice range — including verses the user has
+    // revealed, which no longer carry the .masked class.
+    document.querySelectorAll(".verse").forEach((row) => {
+      const n = +row.dataset.v;
+      if (practice.on && n >= practice.from && n <= practice.to) {
+        unmaskVerse(row);
+        maskVerse(row);
+      }
     });
   }
 
