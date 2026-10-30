@@ -803,7 +803,18 @@
     row.querySelector(".ar-mask")?.remove();
   }
 
+  const LAYER_CLASSES = ["show-ar", "show-translit", "show-en", "show-words"];
+  function syncLayerClasses() {
+    const activeCount = LAYER_CLASSES.filter((c) => document.body.classList.contains(c)).length;
+    document.body.classList.toggle("single-layer", activeCount === 1);
+  }
+
   function applyPracticeToDom() {
+    if (practice.on && !document.body.classList.contains("show-ar")) {
+      document.body.classList.add("show-ar");
+      document.getElementById("ar-btn")?.classList.add("on");
+      syncLayerClasses();
+    }
     document.body.classList.toggle("practice", practice.on);
     document.querySelectorAll(".verse").forEach((row) => {
       const n = +row.dataset.v;
@@ -1216,10 +1227,13 @@
       else startContinuous(ch);
     });
 
-    const wordsBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-words") ? " on" : ""), "Word meanings");
-    wordsBtn.addEventListener("click", () => {
-      document.body.classList.toggle("show-words");
-      wordsBtn.classList.toggle("on", document.body.classList.contains("show-words"));
+    const arBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-ar") ? " on" : ""), "Arabic");
+    arBtn.id = "ar-btn";
+    arBtn.title = "Toggle Arabic text";
+    arBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-ar");
+      arBtn.classList.toggle("on", document.body.classList.contains("show-ar"));
+      syncLayerClasses();
     });
 
     // Latin transliteration (covers all 114 surahs)
@@ -1230,6 +1244,7 @@
       document.body.classList.toggle("show-translit");
       const on = document.body.classList.contains("show-translit");
       translitBtn.classList.toggle("on", on);
+      syncLayerClasses();
       if (on) {
         const ok = await loadTranslit(ch);
         if (!ok) {
@@ -1249,6 +1264,22 @@
         else injectTranslitInDom(ch);
       });
     }
+
+    const enBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-en") ? " on" : ""), "English");
+    enBtn.title = "Toggle English translation";
+    enBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-en");
+      enBtn.classList.toggle("on", document.body.classList.contains("show-en"));
+      syncLayerClasses();
+    });
+
+    const wordsBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-words") ? " on" : ""), "Word meanings");
+    wordsBtn.title = "Toggle word-by-word meanings";
+    wordsBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-words");
+      wordsBtn.classList.toggle("on", document.body.classList.contains("show-words"));
+      syncLayerClasses();
+    });
 
     // practice: hide the Arabic so you recite from memory, then tap to check
     practice = { on: false, from: null, to: null };
@@ -1279,7 +1310,7 @@
     resetMasks.addEventListener("click", remaskAll);
     practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("letters", "First letters"), resetMasks);
 
-    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, wordsBtn, translitBtn, practiceBtn);
+    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, arBtn, translitBtn, enBtn, wordsBtn, practiceBtn);
     head.append(controls, practiceTools);
 
     // Memorisation parts (long surahs only): a strip of chips plus a tick per part.
@@ -1525,6 +1556,8 @@
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => themeManager.apply());
 
   // ---------- boot ----------
+  document.body.classList.add("show-ar", "show-en");
+  syncLayerClasses();
   themeManager.apply();
   document.getElementById("theme-btn")?.addEventListener("click", () => themeManager.cycle());
   document.getElementById("export-btn")?.addEventListener("click", renderExportPanel);

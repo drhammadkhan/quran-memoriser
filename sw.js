@@ -6,7 +6,7 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const CACHE = "qm-app-v9";
+const CACHE = "qm-app-v10";
 const CORE = [
   "./",
   "index.html",

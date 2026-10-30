@@ -595,9 +595,14 @@ main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 22px 20
   line-height: 2.15;
   color: var(--ar-ink);
   word-spacing: 2px;
+  display: none;
 }
 
-.verse-en { font-size: 15.5px; line-height: 1.6; color: var(--en-ink); }
+body.show-ar .verse-ar { display: block; }
+
+.verse-en { font-size: 15.5px; line-height: 1.6; color: var(--en-ink); display: none; }
+
+body.show-en .verse-en { display: block; }
 
 .verse-tl {
   font-family: var(--serif);
@@ -622,6 +627,41 @@ body.show-translit .verse-tl { display: block; }
 }
 
 body.show-words .verse-words { display: block; }
+
+/* Compact single-part reading layout */
+body.single-layer .verse {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  margin-bottom: 3px;
+  border-radius: 7px;
+}
+
+body.single-layer .verse-top {
+  flex-shrink: 0;
+  gap: 7px;
+}
+
+body.single-layer .verse-ar,
+body.single-layer .verse-tl,
+body.single-layer .verse-en,
+body.single-layer .verse-words {
+  flex: 1;
+  min-width: 0;
+}
+
+body.single-layer .verse-ar {
+  line-height: 1.75;
+}
+
+body.single-layer .verse-words {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-top: none;
+  border-radius: 0;
+}
 
 .meta-ticked { color: var(--green); font-weight: 700; }
 
@@ -900,6 +940,8 @@ body.show-translit .verse.masked .verse-tl { display: none; }
   .verse-tl { font-size: 13px; }
   .verse-en { font-size: 14px; }
   .verse-words { font-size: 11.5px; margin: 0 -12px -10px; padding: 7px 12px; }
+  body.single-layer .verse { padding: 5px 10px; margin-bottom: 2px; gap: 8px; }
+  body.single-layer .verse-words { margin: 0; padding: 0; }
 
   .practice-tools { gap: 5px; margin-top: 8px; padding-top: 8px; }
   .practice-tools .filter-btn { padding: 4px 9px; font-size: 11px; }
