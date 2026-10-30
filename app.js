@@ -745,43 +745,26 @@
   // practice = { on, from, to } — scoped to a verse range (part or chapter)
   let practice = { on: false, from: null, to: null };
 
-  // Reduce each Arabic word to its first letter (with diacritics) + a tatweel,
-  // the classic hifz prompt between full text and blank. Verse-end markers
-  // (﴿١﴾ etc.) are dropped.
-  function firstLettersHint(ar) {
-    const isBase = (c) => {
-      const x = c.codePointAt(0);
-      return (x >= 0x0621 && x <= 0x064a) || (x >= 0x0671 && x <= 0x06d3) || x === 0x0640 || x === 0x066e;
-    };
-    const isMark = (c) => {
-      const x = c.codePointAt(0);
-      return (x >= 0x064b && x <= 0x065f) || x === 0x0670 || (x >= 0x06d6 && x <= 0x06ed);
-    };
-    return ar
-      .split(/\s+/)
-      .map((word) => {
-        let out = "";
-        let started = false;
-        for (const ch of word) {
-          if (!started) {
-            if (isBase(ch)) { out += ch; started = true; }
-          } else if (isMark(ch)) {
-            out += ch;
-          } else {
-            break;
-          }
-        }
-        return started ? out + "ــ" : "";
-      })
-      .filter(Boolean)
-      .join(" ");
+  // Extract the first word of an Arabic verse as a recall prompt.
+  // Verse-end markers (﴿۱﴾ etc.) and waqf symbols are ignored.
+  function firstWordHint(ar) {
+    if (!ar) return "";
+    const words = ar.split(/\s+/).filter((w) => !anyVersePunctuation(w));
+    return words.length ? words[0] + " …" : "";
+  }
+
+  function anyVersePunctuation(w) {
+    return Array.from(w).some((c) => {
+      const code = c.codePointAt(0);
+      return (code >= 0x0660 && code <= 0x0669) || "﴿﴾٪۬ۙۚؕۖۗۘۜ".includes(c);
+    });
   }
 
   function buildMaskCover(row, v) {
     const cover = el("div", "ar-mask");
     const hintLevel = prefs.get("hintLevel", "hidden");
-    if (hintLevel === "letters") {
-      cover.append(el("span", "ar-mask-hint ar", esc(firstLettersHint(v.ar))));
+    if (hintLevel === "word" || hintLevel === "letters") {
+      cover.append(el("span", "ar-mask-hint ar", esc(firstWordHint(v.ar))));
     } else {
       cover.append(el("span", "ar-mask-label", "recite from memory — tap to check"));
     }
@@ -1209,8 +1192,8 @@
       <section>
         <h2>Practice mode</h2>
         <p>The ◔ Practice button hides the Arabic behind tap-to-reveal masks so you recite from
-        memory and check yourself. Choose a fully blank prompt or the classic hifz prompt — the
-        first letters of every word — and drill a single part or the whole chapter. Combined with
+        memory and check yourself. Choose a fully blank prompt or the first-word cue
+        and drill a single part or the whole chapter. Combined with
         Repeat ×N and the Recite pause, the player becomes a listen-and-repeat exercise: hear the
         verse, recite into the silence, hear it again.</p>
       </section>
@@ -1240,7 +1223,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.12</b> (shell: <code>qm-shell-v12</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.13</b> (shell: <code>qm-shell-v13</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
@@ -1436,7 +1419,13 @@
     };
     const resetMasks = el("button", "filter-btn", "Reset masks");
     resetMasks.addEventListener("click", remaskAll);
-    practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("letters", "First letters"), resetMasks);
+    const currentHint = prefs.get("hintLevel", "hidden");
+    const activeHintId = (currentHint === "word" || currentHint === "letters") ? "word" : "hidden";
+    practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("word", "First word"), resetMasks);
+    if (activeHintId === "word") {
+      practiceTools.querySelector('.filter-btn[data-hint="word"]')?.classList.add("active");
+      practiceTools.querySelector('.filter-btn[data-hint="hidden"]')?.classList.remove("active");
+    }
 
     controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, arBtn, translitBtn, enBtn, wordsBtn, practiceBtn);
     head.append(controls, practiceTools);
