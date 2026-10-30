@@ -96,6 +96,7 @@
       return {
         app: "quran-memoriser", v: 1, exportedAt: new Date().toISOString(),
         status: statusStore.readRaw(), verses: verseStore.readAllRaw(),
+        salat: salatStore.readRaw(),
       };
     },
     mergeInto(localRaw, snapRaw) {
@@ -127,16 +128,18 @@
         const m = pickVerses(localRaw.verses?.[ch], snapRaw.verses?.[ch]);
         if (Object.keys(m).length) verses[ch] = m;
       }
-      return { status, verses };
+      const salat = pickVerses(localRaw.salat || {}, snapRaw.salat || {});
+      return { status, verses, salat };
     },
     apply(snap) {
       if (!snap || typeof snap !== "object") throw new Error("Invalid snapshot");
       const merged = this.mergeInto(
-        { status: statusStore.readRaw(), verses: verseStore.readAllRaw() },
-        { status: snap.status || {}, verses: snap.verses || {} }
+        { status: statusStore.readRaw(), verses: verseStore.readAllRaw(), salat: salatStore.readRaw() },
+        { status: snap.status || {}, verses: snap.verses || {}, salat: snap.salat || {} }
       );
       statusStore.writeRaw(merged.status);
       verseStore.writeAllRaw(merged.verses);
+      salatStore.writeRaw(merged.salat);
       // Reconcile chapter statuses with merged verse ticks
       const touched = new Set([
         ...Object.keys(merged.status || {}),
@@ -299,6 +302,32 @@
       this.writeAllRaw(all);
     },
     count(ch) { return Object.values(this.readAllRaw()[ch] || {}).filter((t) => t >= 0).length; },
+  };
+
+  // Salat memorisation ticks with timestamps: { "takbir": <ms>, "thana": <ms> }
+  const salatStore = {
+    key: "qm.salat.v1",
+    readRaw() {
+      let all = {};
+      try { all = JSON.parse(localStorage.getItem(this.key)) || {}; } catch {}
+      const out = {};
+      for (const [id, val] of Object.entries(all)) {
+        if (val === true) out[id] = 0;
+        else if (typeof val === "number" && val !== 0) out[id] = val;
+      }
+      return out;
+    },
+    writeRaw(m) { localStorage.setItem(this.key, JSON.stringify(m)); },
+    get(id) {
+      const t = this.readRaw()[id];
+      return t !== undefined && t >= 0;
+    },
+    set(id, on) {
+      const all = this.readRaw();
+      all[id] = on ? Date.now() : -Date.now();
+      this.writeRaw(all);
+    },
+    count() { return Object.values(this.readRaw()).filter((t) => t >= 0).length; },
   };
 
   // Split a surah into memorisation parts: ~150 Arabic words each (about half a
@@ -1223,7 +1252,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.13</b> (shell: <code>qm-shell-v13</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.14</b> (shell: <code>qm-shell-v14</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
@@ -1610,6 +1639,193 @@
     renderChips();
   }
 
+  // ---------- Salaat memorisation page ----------
+  let salatData = null;
+  let salatPractice = { on: false };
+
+  function applySalatPracticeToDom() {
+    if (salatPractice.on && !document.body.classList.contains("show-ar")) {
+      document.body.classList.add("show-ar");
+      document.getElementById("salat-ar-btn")?.classList.add("on");
+      syncLayerClasses();
+    }
+    document.querySelectorAll(".verse[data-salat-id]").forEach((row) => {
+      if (salatPractice.on) maskVerse(row);
+      else unmaskVerse(row);
+    });
+    const btn = document.getElementById("salat-practice-btn");
+    if (btn) {
+      btn.textContent = salatPractice.on ? "✕ Exit practice" : "◔ Practice";
+      btn.classList.toggle("btn-ghost", !salatPractice.on);
+    }
+    const tools = document.getElementById("salat-practice-tools");
+    if (tools) tools.classList.toggle("hidden", !salatPractice.on);
+  }
+
+  function remaskAllSalat() {
+    document.querySelectorAll(".verse[data-salat-id]").forEach((row) => {
+      if (salatPractice.on) {
+        unmaskVerse(row);
+        maskVerse(row);
+      }
+    });
+  }
+
+  async function renderSalat() {
+    stopPlayback();
+    activeChapterRefresh = null;
+    const view = document.getElementById("view");
+    view.innerHTML = `<div class="loading-note">Loading Salaat…</div>`;
+
+    if (!salatData) {
+      try {
+        salatData = await fetchJSON("data/salat.json");
+      } catch (e) {
+        view.innerHTML = `
+          <a class="crumb" href="#/">← All chapters</a>
+          <div class="error-note">Could not load Salaat data (${esc(e.message)}).</div>`;
+        return;
+      }
+    }
+
+    view.innerHTML = "";
+    const crumb = el("a", "crumb", "← All chapters");
+    crumb.href = "#/";
+    view.append(crumb);
+
+    const head = el("div", "chapter-head");
+    const titleRow = el("div", "chapter-title-row");
+    const title = el("div", "chapter-title",
+      `<span class="en">The Complete Salat</span><span class="ar">الصَّلَاة</span>`);
+    titleRow.append(title);
+
+    const totalItems = salatData.length;
+    const metaEl = el("div", "chapter-meta", "");
+    const refreshSalatMeta = () => {
+      const done = salatStore.count();
+      metaEl.innerHTML =
+        `From <i>Salat – The Muslim Prayer Book</i> (alislam.org) · ${totalItems} steps` +
+        (done > 0 ? ` · <b class="verse-progress">${done}/${totalItems} items memorised</b>` : "");
+    };
+    refreshSalatMeta();
+    head.append(titleRow, metaEl);
+
+    // Controls: layer toggles and practice mode
+    const controls = el("div", "controls");
+
+    const arBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-ar") ? " on" : ""), "Arabic");
+    arBtn.id = "salat-ar-btn";
+    arBtn.title = "Toggle Arabic text";
+    arBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-ar");
+      arBtn.classList.toggle("on", document.body.classList.contains("show-ar"));
+      syncLayerClasses();
+    });
+
+    const translitBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-translit") ? " on" : ""), "Transliteration");
+    translitBtn.title = "Toggle Latin transliteration";
+    translitBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-translit");
+      translitBtn.classList.toggle("on", document.body.classList.contains("show-translit"));
+      syncLayerClasses();
+    });
+
+    const enBtn = el("button", "btn btn-ghost" + (document.body.classList.contains("show-en") ? " on" : ""), "English");
+    enBtn.title = "Toggle English translation";
+    enBtn.addEventListener("click", () => {
+      document.body.classList.toggle("show-en");
+      enBtn.classList.toggle("on", document.body.classList.contains("show-en"));
+      syncLayerClasses();
+    });
+
+    salatPractice = { on: false };
+    const practiceBtn = el("button", "btn btn-ghost", "◔ Practice");
+    practiceBtn.id = "salat-practice-btn";
+    practiceBtn.addEventListener("click", () => {
+      salatPractice.on = !salatPractice.on;
+      applySalatPracticeToDom();
+    });
+
+    const practiceTools = el("div", "practice-tools hidden");
+    practiceTools.id = "salat-practice-tools";
+    const hintLabel = el("span", "label", "Prompt:");
+    const mkHint = (id, label) => {
+      const b = el("button", "filter-btn" + (prefs.get("hintLevel", "hidden") === id ? " active" : ""), label);
+      b.addEventListener("click", () => {
+        prefs.set("hintLevel", id);
+        practiceTools.querySelectorAll(".filter-btn[data-hint]").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        remaskAllSalat();
+      });
+      b.dataset.hint = id;
+      return b;
+    };
+    const resetMasks = el("button", "filter-btn", "Reset masks");
+    resetMasks.addEventListener("click", remaskAllSalat);
+    const currentHint = prefs.get("hintLevel", "hidden");
+    const activeHintId = (currentHint === "word" || currentHint === "letters") ? "word" : "hidden";
+    practiceTools.append(hintLabel, mkHint("hidden", "Blank"), mkHint("word", "First word"), resetMasks);
+    if (activeHintId === "word") {
+      practiceTools.querySelector('.filter-btn[data-hint="word"]')?.classList.add("active");
+      practiceTools.querySelector('.filter-btn[data-hint="hidden"]')?.classList.remove("active");
+    }
+
+    controls.append(arBtn, translitBtn, enBtn, practiceBtn);
+    head.append(controls, practiceTools);
+    view.append(head);
+
+    let lastPart = null;
+    salatData.forEach((item) => {
+      if (item.part !== lastPart) {
+        lastPart = item.part;
+        const banner = el("div", "part-header");
+        const bLabel = el("div", "part-label");
+        bLabel.append(
+          el("span", "part-no", item.part === "prayer" ? "The Daily Prayer (Salat)" : "Remembrance after Prayer (Dhikr)"),
+          el("span", "part-words", item.part === "prayer" ? "From Takbir-i-Tahrimah to Salam" : "Supplications and Tasbih after conclusion")
+        );
+        banner.append(bLabel);
+        view.append(banner);
+      }
+
+      const row = el("div", "verse");
+      row.dataset.salatId = item.id;
+      row.dataset.ar = item.ar;
+      if (salatStore.get(item.id)) row.classList.add("memorised");
+
+      const top = el("div", "verse-top");
+      const tickBtn = el("button", "verse-tick" + (salatStore.get(item.id) ? " on" : ""), "✓");
+      tickBtn.title = salatStore.get(item.id) ? "Memorised — click to clear" : "Mark this step memorised";
+      tickBtn.addEventListener("click", () => {
+        const next = !salatStore.get(item.id);
+        salatStore.set(item.id, next);
+        tickBtn.classList.toggle("on", next);
+        row.classList.toggle("memorised", next);
+        refreshSalatMeta();
+      });
+
+      const ref = el("span", "verse-ref", `Step ${item.step}`);
+      const titleSpan = el("span", "part-range", esc(item.title));
+      const postureSpan = el("span", "salat-posture", esc(item.posture));
+      top.append(tickBtn, ref, titleSpan, postureSpan);
+      row.append(top);
+
+      if (item.instruction) {
+        row.append(el("div", "verse-instruction", esc(item.instruction)));
+      }
+
+      row.append(el("div", "verse-ar", esc(item.ar)));
+      if (item.tl) row.append(el("div", "verse-tl", esc(item.tl)));
+      if (item.en) row.append(el("div", "verse-en", esc(item.en)));
+      if (item.note) row.append(el("div", "verse-note", `Ref: ${esc(item.note)}`));
+
+      view.append(row);
+    });
+
+    window.scrollTo({ top: 0, behavior: "instant" });
+    renderChips();
+  }
+
   // ---------- router ----------
   let gridScrollY = 0;          // grid scroll to restore when returning from a chapter
   let chapterScrollY = {};      // per-chapter scroll to restore when re-entering
@@ -1624,6 +1840,12 @@
       viewIsGrid = false;
       currentChapter = parseInt(m[1], 10);
       renderChapter(currentChapter);
+    } else if (location.hash === "#/salat") {
+      if (viewIsGrid) gridScrollY = window.scrollY;
+      else if (currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
+      viewIsGrid = false;
+      currentChapter = null;
+      renderSalat();
     } else if (location.hash === "#/about") {
       if (viewIsGrid) gridScrollY = window.scrollY;
       else if (currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
@@ -1680,7 +1902,7 @@
   document.getElementById("export-btn")?.addEventListener("click", renderExportPanel);
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
-  window.__qm = { statusStore, verseStore, snapshots }; // debug/verification hook
+  window.__qm = { statusStore, verseStore, salatStore, snapshots }; // debug/verification hook
 
   // Service worker makes the app installable and fully offline (needs a
   // secure context: https or localhost — silently skipped on plain LAN IPs).

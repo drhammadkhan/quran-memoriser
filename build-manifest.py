@@ -18,6 +18,8 @@ DATA = ROOT / "data"
 
 def main():
     paths = [DATA / "surahs.json"]
+    if (DATA / "salat.json").exists():
+        paths.append(DATA / "salat.json")
     for ch in range(1, 115):
         paths.append(DATA / "chapters" / f"{ch}.json")
         translit = DATA / "translit" / f"{ch}.json"
