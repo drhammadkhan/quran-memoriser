@@ -1252,7 +1252,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.14</b> (shell: <code>qm-shell-v14</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.15</b> (shell: <code>qm-shell-v15</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
@@ -1682,14 +1682,14 @@
         salatData = await fetchJSON("data/salat.json");
       } catch (e) {
         view.innerHTML = `
-          <a class="crumb" href="#/">← All chapters</a>
+          <a class="crumb" href="#/">← Quran</a>
           <div class="error-note">Could not load Salaat data (${esc(e.message)}).</div>`;
         return;
       }
     }
 
     view.innerHTML = "";
-    const crumb = el("a", "crumb", "← All chapters");
+    const crumb = el("a", "crumb", "← Quran");
     crumb.href = "#/";
     view.append(crumb);
 
