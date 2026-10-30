@@ -65,6 +65,9 @@ def main():
         total_verses += got
         print(f"ch {ch:3d} {s['name']:<22} {got:3d} verses (empty en: {missing_en})", flush=True)
     print(f"DONE total verses: {total_verses}")
+    # refresh the data hashes so installed apps pick up the changes
+    import subprocess, sys
+    subprocess.run([sys.executable, str(ROOT / "build-manifest.py")], check=False)
 
 if __name__ == "__main__":
     main()

@@ -15,7 +15,7 @@ Then open http://127.0.0.1:8765
 
 ## Install as an app (phone/tablet)
 
-The app is a PWA (manifest + service worker). Served over **HTTPS** (or localhost), the service worker precaches the entire app — shell, all 114 chapters and the font — so after the first load it runs entirely on the device, offline, launched from a home-screen icon:
+The app is a PWA (manifest + service worker). Served over **HTTPS** (or localhost), the service worker caches the app shell and font, and on first launch the app saves all 114 chapters (text, translation, transliteration) to the device in the background — resumably, so a closed app picks up where it left off. After that it runs entirely on the device, offline, launched from a home-screen icon. When online, code updates apply on the next launch and changed data files are re-downloaded automatically (via `data/manifest.json`):
 
 - **Android (Chrome):** open the site → menu → *Add to Home screen / Install app*.
 - **iPhone/iPad (Safari):** open the site → Share → *Add to Home Screen*.
@@ -59,3 +59,5 @@ Verse numbering follows alislam.org's Quran (6,348 verses — in their numbering
 - `assets/ManzoorNaskh.ttf` — Arabic font from alislam.org
 
 To re-download or refresh the text data: `python3 download-data.py`
+
+After editing anything in `data/` by hand, run `python3 build-manifest.py` before pushing. It writes `data/manifest.json` (a hash per data file); installed apps compare it with the copies saved on the device and re-download only the files that changed.

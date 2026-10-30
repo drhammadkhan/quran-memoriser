@@ -843,15 +843,139 @@
     });
   }
 
+  // ---------- offline data (persistent on-device copy of every data file) ----------
+  // Shared with sw.js. The service worker serves data cache-first from here;
+  // offlineSync() fills it on first launch (resumable, file by file) and
+  // re-downloads only files whose hash changed in data/manifest.json.
+  const DATA_CACHE = "qm-data-v1";
+  const HASH_HEADER = "x-qm-hash";
+
+  async function fetchJSON(path) {
+    try {
+      const r = await fetch(path);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (err) {
+      // no service worker in control (or it failed): read the device copy directly
+      if ("caches" in window) {
+        const hit = await caches.match(path, { cacheName: DATA_CACHE }).catch(() => null);
+        if (hit) return hit.json();
+      }
+      throw err;
+    }
+  }
+
+  const offlineStatus = {
+    pill: null,
+    hideTimer: null,
+    show(text, done = false) {
+      if (!this.pill) {
+        this.pill = el("div", "offline-status");
+        this.pill.setAttribute("role", "status");
+        document.body.append(this.pill);
+      }
+      clearTimeout(this.hideTimer);
+      this.pill.textContent = text;
+      this.pill.classList.toggle("done", done);
+      this.pill.classList.add("visible");
+      if (done) this.hideTimer = setTimeout(() => this.pill.classList.remove("visible"), 3000);
+    },
+    hide() { this.pill?.classList.remove("visible"); },
+    footer(text) {
+      const f = document.getElementById("offline-ready");
+      if (f) f.textContent = text;
+    },
+  };
+
+  let syncRunning = false;
+  async function offlineSync() {
+    if (syncRunning || !("caches" in window)) return;
+    syncRunning = true;
+    try {
+      let manifest;
+      try {
+        const r = await fetch(`data/manifest.json?v=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        manifest = await r.json();
+      } catch {
+        return; // offline: keep using what is already saved on the device
+      }
+      const files = Object.entries(manifest.files || {});
+      const cache = await caches.open(DATA_CACHE);
+
+      // which files are missing from the device, or out of date?
+      const todo = [];
+      for (const [path, hash] of files) {
+        const hit = await cache.match(path);
+        if (!hit || hit.headers.get(HASH_HEADER) !== hash) todo.push([path, hash, !!hit]);
+      }
+      if (!todo.length) {
+        offlineStatus.footer("✓ All 114 chapters are saved on this device for offline use.");
+        return;
+      }
+
+      try { await navigator.storage?.persist?.(); } catch {}
+      const firstSave = todo.some(([, , had]) => !had) && todo.length > 20;
+      const label = firstSave ? "Saving verses for offline use" : "Updating verses";
+      let done = 0;
+      let failed = 0;
+      offlineStatus.show(`${label}… 0/${todo.length}`);
+
+      const changed = [];
+      const queue = todo.slice();
+      const worker = async () => {
+        while (queue.length) {
+          const [path, hash, had] = queue.shift();
+          try {
+            const r = await fetch(`${path}?v=${hash}`, { cache: "no-store" });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const body = await r.blob();
+            await cache.put(path, new Response(body, {
+              headers: { "content-type": "application/json", [HASH_HEADER]: hash },
+            }));
+            if (had) changed.push(path);
+          } catch {
+            failed++;
+          }
+          done++;
+          offlineStatus.show(`${label}… ${done}/${todo.length}`);
+        }
+      };
+      await Promise.all(Array.from({ length: 4 }, worker));
+
+      // forget in-memory copies of anything that changed, refresh what's on screen
+      for (const path of changed) {
+        const m = path.match(/^data\/(chapters|translit)\/(\d+)\.json$/);
+        if (!m) continue;
+        const ch = +m[2];
+        if (m[1] === "chapters") delete chapterCache[ch];
+        else {
+          delete translitCache[ch];
+          if (ch === currentChapter && document.body.classList.contains("show-translit")) {
+            loadTranslit(ch).then((ok) => { if (ok) injectTranslitInDom(ch); });
+          }
+        }
+      }
+
+      if (failed) {
+        offlineStatus.show(`Saved ${done - failed}/${todo.length} — will finish next time you're online`, true);
+        offlineStatus.footer("Some chapters are not saved for offline use yet — they'll finish next time you're online.");
+      } else {
+        offlineStatus.show(firstSave ? "✓ All chapters saved for offline use" : "✓ Verses updated", true);
+        offlineStatus.footer("✓ All 114 chapters are saved on this device for offline use.");
+      }
+    } finally {
+      syncRunning = false;
+    }
+  }
+
   // ---------- transliteration (lazy-loaded per chapter) ----------
   const translitCache = {}; // ch -> {byVerse: {n: tl}, missing: bool}
   async function loadTranslit(ch) {
     if (translitCache[ch] && !translitCache[ch].missing) return true;
     if (translitCache[ch]?.missing && !navigator.onLine) return false;
     try {
-      const r = await fetch(`data/translit/${ch}.json`);
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const d = await r.json();
+      const d = await fetchJSON(`data/translit/${ch}.json`);
       const byVerse = {};
       for (const v of d.verses || []) byVerse[v.n] = v.tl;
       translitCache[ch] = { byVerse };
@@ -1143,17 +1267,16 @@
     let data = chapterCache[ch];
     if (!data) {
       try {
-        const r = await fetch(`data/chapters/${ch}.json`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        data = await r.json();
+        data = await fetchJSON(`data/chapters/${ch}.json`);
         chapterCache[ch] = data;
       } catch (e) {
+        const hint = navigator.onLine
+          ? `Could not load chapter data (${esc(e.message)}). Please try again.`
+          : `You're offline and this chapter hasn't been saved to this device yet.<br/>
+             Open the app once with an internet connection and all 114 chapters will be saved for offline use.`;
         view.innerHTML = `
           <a class="crumb" href="#/">← All chapters</a>
-          <div class="error-note">
-            Could not load chapter data (${esc(e.message)}).<br/>
-            If data files are still downloading, run <code>python3 download-data.py</code> in the app folder and refresh.
-          </div>`;
+          <div class="error-note">${hint}</div>`;
         return;
       }
     }
@@ -1579,15 +1702,20 @@
     });
   }
 
-  fetch("data/surahs.json")
-    .then((r) => r.json())
+  fetchJSON("data/surahs.json")
     .then((list) => {
       surahs = list;
       renderChips();
       route();
+      // save every chapter to the device (first launch) / pull changed files
+      offlineSync();
     })
     .catch(() => {
       document.getElementById("view").innerHTML =
         '<div class="error-note">Could not load <code>data/surahs.json</code>.</div>';
     });
+  window.addEventListener("online", () => offlineSync());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && navigator.onLine) offlineSync();
+  });
 })();
