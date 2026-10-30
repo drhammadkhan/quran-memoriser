@@ -8,8 +8,8 @@
 
   const AUDIO_BASE = "https://files.alislam.cloud/audio/tilawat/";
   const RECITERS = {
-    ashiq: "Qari Muhammad Ashiq",
     feroz: "Maulana Feroz Alam",
+    ashiq: "Qari Muhammad Ashiq",
     aiman: "Aiman Almaliki",
     rashid: "Mishary Rashid AlAfasy",
     "idir-iken": "Idir Iken",
@@ -649,7 +649,7 @@
     player.currentV = n;
     const playBtn = document.querySelector(`.verse[data-v="${n}"][data-ch="${ch}"] .verse-play`);
     if (playBtn) playBtn.classList.add("loading");
-    const reciter = prefs.get("reciter", "ashiq");
+    const reciter = prefs.get("reciter", "feroz");
     const resolved = await resolveAudioUrl(ch, n, reciter);
     if (token !== playToken) {
       if (resolved.objectUrl) URL.revokeObjectURL(resolved.url);
@@ -1183,7 +1183,7 @@
       o.value = id;
       reciterSel.append(o);
     }
-    reciterSel.value = prefs.get("reciter", "ashiq");
+    reciterSel.value = prefs.get("reciter", "feroz");
     reciterSel.addEventListener("change", () => { prefs.set("reciter", reciterSel.value); stopPlayback(); });
     reciterLabel.append(reciterSel);
 
