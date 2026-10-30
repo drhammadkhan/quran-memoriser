@@ -807,13 +807,15 @@ a.topbar-btn { text-decoration: none; }
 }
 
 .ar-mask-hint {
+  font-family: "ManzoorNaskh", serif;
   font-size: 30px;
   line-height: 2.15;
-  color: var(--ink);
+  color: var(--ar-ink);
   opacity: 0.85;
   width: 100%;
   text-align: right;
   direction: rtl;
+  word-spacing: 6px;
 }
 
 .verse.masked .verse-ar { min-height: 52px; }
