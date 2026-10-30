@@ -1239,6 +1239,11 @@
       </section>
 
       <section>
+        <h2>App version</h2>
+        <p>Build: <b>v1.12</b> (shell: <code>qm-shell-v12</code> · data: <code>qm-data-v1</code>).
+        Automatic offline updates are active via <code>data/manifest.json</code>.</p>
+      </section>
+      <section>
         <h2>Sources &amp; credits</h2>
         <ul>
           <li>Arabic text and the English translation (Maulawi Sher Ali) — alislam.org's Quran
