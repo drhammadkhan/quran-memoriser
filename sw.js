@@ -6,7 +6,7 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const CACHE = "qm-app-v6";
+const CACHE = "qm-app-v7";
 const CORE = [
   "./",
   "index.html",
@@ -20,19 +20,19 @@ const CORE = [
   "icons/icon-maskable-512.png",
   "icons/apple-touch-icon.png",
 ];
-const CACHE_FIRST = /(\/|^)(data|assets|icons)\//;
+const CACHE_FIRST = /(\/|^)(data\/chapters|assets|icons)\//;
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(CORE);
+    await Promise.all(CORE.map((u) => cache.add(new Request(u, { cache: "reload" })).catch(() => {})));
+    self.skipWaiting();
     await Promise.all(Array.from({ length: 114 }, (_, i) =>
       Promise.all([
         cache.add(`data/chapters/${i + 1}.json`).catch(() => {}),
-        cache.add(`data/translit/${i + 1}.json`).catch(() => {}),
+        cache.add(new Request(`data/translit/${i + 1}.json`, { cache: "reload" })).catch(() => {}),
       ])
     ));
-    self.skipWaiting();
   })());
 });
 
@@ -56,7 +56,7 @@ self.addEventListener("fetch", (event) => {
     if (cached && CACHE_FIRST.test(url.pathname)) return cached;
 
     try {
-      const fresh = await fetch(event.request);
+      const fresh = await fetch(event.request, { cache: "no-cache" });
       if (fresh && fresh.ok) cache.put(event.request, fresh.clone());
       return fresh;
     } catch (err) {

@@ -855,9 +855,13 @@
     const map = translitCache[ch]?.byVerse;
     if (!map) return;
     document.querySelectorAll(`.verse[data-ch="${ch}"]`).forEach((row) => {
-      if (row.querySelector(".verse-tl")) return;
       const tl = map[+row.dataset.v];
       if (!tl) return;
+      const existing = row.querySelector(".verse-tl");
+      if (existing) {
+        existing.textContent = tl;
+        return;
+      }
       const tlEl = el("div", "verse-tl", esc(tl));
       const arEl = row.querySelector(".verse-ar");
       if (arEl) arEl.after(tlEl);
@@ -1532,6 +1536,14 @@
   // secure context: https or localhost — silently skipped on plain LAN IPs).
   if ("serviceWorker" in navigator && (location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname))) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      for (const k of Object.keys(translitCache)) delete translitCache[k];
+      if (currentChapter != null && document.body.classList.contains("show-translit")) {
+        loadTranslit(currentChapter).then((ok) => {
+          if (ok) injectTranslitInDom(currentChapter);
+        });
+      }
+    });
   }
 
   fetch("data/surahs.json")
