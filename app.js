@@ -26,6 +26,38 @@
   let surahs = [];
   let chapterCache = {};
   let filter = "all";
+  let last21Only = false;
+  try {
+    last21Only = localStorage.getItem("qm.last21.v1") === "1";
+  } catch (e) {}
+
+  function updateLast21Buttons() {
+    const topBtn = document.getElementById("last21-btn");
+    if (topBtn) {
+      topBtn.classList.toggle("active", last21Only);
+      if (last21Only) {
+        topBtn.innerHTML = '<span class="long-label">Whole Quran</span><span class="short-label">All 114</span>';
+        topBtn.title = "Revert to the whole Quran (114 chapters)";
+      } else {
+        topBtn.innerHTML = '<span class="long-label">Last 21 chapters</span><span class="short-label">Last 21</span>';
+        topBtn.title = "Show only the last 21 chapters of the Holy Quran (Surahs 94–114)";
+      }
+    }
+  }
+
+  function toggleLast21() {
+    last21Only = !last21Only;
+    try {
+      localStorage.setItem("qm.last21.v1", last21Only ? "1" : "0");
+    } catch (e) {}
+    updateLast21Buttons();
+    if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+      location.hash = "#/";
+    } else {
+      renderGrid();
+    }
+  }
+
   let player = {
     audio: null,
     chapter: null,      // chapter number during continuous play
@@ -1123,6 +1155,7 @@
     activeChapterRefresh = null;
     const view = document.getElementById("view");
     view.innerHTML = "";
+    updateLast21Buttons();
 
     const filterRow = el("div", "filter-row");
     const mkFilter = (id, label, dot) => {
@@ -1133,24 +1166,48 @@
     };
     filterRow.append(
       el("span", "label", "Show:"),
-      mkFilter("all", "All 114"),
+      mkFilter("all", last21Only ? "All 21" : "All 114"),
       mkFilter("done", "Memorised", "var(--green)"),
       mkFilter("partial", "Partial", "var(--pink)"),
       mkFilter("next", "Next", "var(--orange)"),
       mkFilter("later", "Later", "var(--blue)"),
       mkFilter("unset", "Not set")
     );
+
+    const scopeBtn = el("button", "filter-btn filter-scope-btn" + (last21Only ? " active" : ""));
+    scopeBtn.innerHTML = last21Only
+      ? '✕ <span class="long-label">Whole Quran</span><span class="short-label">All 114</span>'
+      : '<span class="long-label">Last 21 chapters</span><span class="short-label">Last 21</span>';
+    scopeBtn.title = last21Only
+      ? "Revert to the whole Quran (114 chapters)"
+      : "Show only the last 21 chapters of the Holy Quran (Surahs 94–114)";
+    scopeBtn.addEventListener("click", toggleLast21);
+    filterRow.append(scopeBtn);
+
     view.append(filterRow);
+
+    if (last21Only) {
+      const banner = el("div", "scope-banner");
+      banner.innerHTML = `
+        <span class="scope-banner-text">Showing the <b>last 21 chapters</b> (94. Al-Inshirah → 114. An-Nas)</span>
+        <button type="button" class="scope-revert-btn">Revert to whole Quran (114 chapters) →</button>`;
+      banner.querySelector(".scope-revert-btn").addEventListener("click", toggleLast21);
+      view.append(banner);
+    }
 
     const grid = el("div", "grid");
     const map = statusStore.read();
     const visible = surahs.filter((s) => {
+      if (last21Only && s.ch < 94) return false;
       if (filter === "all") return true;
       if (filter === "unset") return !map[s.ch];
       return map[s.ch] === filter;
     });
     if (!visible.length) {
-      view.append(el("div", "loading-note", "No chapters in this view yet — use the coloured button on a chapter card to set its status."));
+      const emptyMsg = last21Only
+        ? "No chapters in this status among the last 21 chapters."
+        : "No chapters in this view yet — use the coloured button on a chapter card to set its status.";
+      view.append(el("div", "loading-note", emptyMsg));
       return;
     }
     for (const s of visible) {
@@ -1252,7 +1309,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.15</b> (shell: <code>qm-shell-v15</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.16</b> (shell: <code>qm-shell-v16</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
@@ -1292,7 +1349,7 @@
           : `You're offline and this chapter hasn't been saved to this device yet.<br/>
              Open the app once with an internet connection and all 114 chapters will be saved for offline use.`;
         view.innerHTML = `
-          <a class="crumb" href="#/">← All chapters</a>
+          <a class="crumb" href="#/">${last21Only ? "← Last 21 chapters" : "← All chapters"}</a>
           <div class="error-note">${hint}</div>`;
         return;
       }
@@ -1301,7 +1358,7 @@
     stopPlayback();
     view.innerHTML = "";
 
-    const crumb = el("a", "crumb", "← All chapters");
+    const crumb = el("a", "crumb", last21Only ? "← Last 21 chapters" : "← All chapters");
     crumb.href = "#/";
     view.append(crumb);
 
@@ -1902,6 +1959,11 @@
   document.getElementById("export-btn")?.addEventListener("click", renderExportPanel);
   const offlineBtn = document.getElementById("offline-audio-btn");
   if (offlineBtn) offlineBtn.addEventListener("click", renderOfflinePanel);
+  const last21Btn = document.getElementById("last21-btn");
+  if (last21Btn) {
+    last21Btn.addEventListener("click", toggleLast21);
+    updateLast21Buttons();
+  }
   window.__qm = { statusStore, verseStore, salatStore, snapshots }; // debug/verification hook
 
   // Service worker makes the app installable and fully offline (needs a

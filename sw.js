@@ -17,7 +17,7 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const SHELL = "qm-shell-v15";
+const SHELL = "qm-shell-v16";
 const DATA = "qm-data-v1";
 const CORE = [
   "./",

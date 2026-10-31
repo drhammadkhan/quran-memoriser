@@ -254,7 +254,58 @@ main { flex: 1; width: 100%; max-width: 1200px; margin: 0 auto; padding: 22px 20
 
 .filter-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
+.filter-btn.filter-scope-btn {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.filter-btn.filter-scope-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .filter-btn .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+.scope-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--band);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+
+.scope-banner-text b {
+  color: var(--accent);
+}
+
+.scope-revert-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scope-revert-btn:hover {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+}
 
 /* ---------- surah grid ---------- */
 
@@ -863,8 +914,18 @@ body.show-translit .verse.masked .verse-tl { display: none; }
   text-transform: uppercase;
 }
 
+.topbar-btn.active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.long-label { display: inline; }
+.short-label { display: none; }
+
 @media (hover: hover) and (pointer: fine) {
   .topbar-btn:hover { background: var(--band); border-color: var(--ink); color: var(--ink); }
+  .topbar-btn.active:hover { background: var(--ink); color: var(--surface); opacity: 0.9; }
 }
 
 .modal-overlay {
@@ -958,6 +1019,12 @@ body.show-translit .verse.masked .verse-tl { display: none; }
 
   .filter-row { margin-bottom: 10px; gap: 5px; }
   .filter-btn { padding: 4px 9px; font-size: 11.5px; gap: 5px; }
+  .filter-btn.filter-scope-btn { margin-left: 0; width: 100%; justify-content: center; margin-top: 4px; }
+
+  .long-label { display: none; }
+  .short-label { display: inline; }
+  .scope-banner { padding: 8px 10px; font-size: 12px; gap: 8px; }
+  .scope-revert-btn { font-size: 10.5px; padding: 3px 8px; }
 
   .grid { gap: 6px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   .card { padding: 8px 9px 7px; gap: 4px; border-radius: 10px; border-left-width: 3px; }
