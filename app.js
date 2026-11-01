@@ -45,13 +45,17 @@
     }
   }
 
+  let visHooks = null;
+
   function toggleLast21() {
     last21Only = !last21Only;
     try {
       localStorage.setItem("qm.last21.v1", last21Only ? "1" : "0");
     } catch (e) {}
     updateLast21Buttons();
-    if (location.hash && location.hash !== "#/" && location.hash !== "#") {
+    if (location.hash.startsWith("#/visualise") && visHooks?.onScopeUpdated) {
+      visHooks.onScopeUpdated();
+    } else if (location.hash && location.hash !== "#/" && location.hash !== "#") {
       location.hash = "#/";
     } else {
       renderGrid();
@@ -690,6 +694,7 @@
       btn.classList.replace("btn-stop", "btn-play");
     }
     syncPartPlayButtons();
+    if (visHooks?.onPlaybackUpdated) visHooks.onPlaybackUpdated(null, null);
   }
 
   function highlightVerse(ch, n) {
@@ -699,6 +704,7 @@
       row.classList.add("playing");
       row.scrollIntoView({ block: "center", behavior: "smooth" });
     }
+    if (visHooks?.onPlaybackUpdated) visHooks.onPlaybackUpdated(ch, n);
   }
 
   async function playVerse(ch, n, { continuous = false } = {}) {
@@ -1309,7 +1315,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.16</b> (shell: <code>qm-shell-v16</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.17</b> (shell: <code>qm-shell-v17</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
@@ -1513,7 +1519,12 @@
       practiceTools.querySelector('.filter-btn[data-hint="hidden"]')?.classList.remove("active");
     }
 
-    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, arBtn, translitBtn, enBtn, wordsBtn, practiceBtn);
+    const view3dBtn = el("a", "btn btn-ghost", "✦ 3D View");
+    view3dBtn.href = `#/visualise/${ch}`;
+    view3dBtn.title = "Explore this chapter's verses in the 3D Cosmos visualiser";
+    view3dBtn.style.textDecoration = "none";
+
+    controls.append(reciterLabel, repeatLabel, gapLabel, playBtn, arBtn, translitBtn, enBtn, wordsBtn, practiceBtn, view3dBtn);
     head.append(controls, practiceTools);
 
     // Memorisation parts (long surahs only): a strip of chips plus a tick per part.
@@ -1889,7 +1900,50 @@
   let viewIsGrid = true;
   let currentChapter = null;
 
+  function launchVisualiser(ch = null) {
+    if (!window.QuranVisualiser) return;
+    visHooks = window.QuranVisualiser.mount({
+      surahs,
+      statusStore,
+      verseStore,
+      chapterCache,
+      translitCache,
+      fetchJSON,
+      loadTranslit,
+      playVerse,
+      stopPlayback,
+      startContinuous,
+      rollupChapterStatus,
+      renderChips,
+      getLast21: () => last21Only,
+      toggleLast21,
+      getPlayingState: () => ({
+        currentCh: player.currentCh,
+        currentV: player.currentV,
+        continuous: player.continuous,
+      }),
+      el,
+      esc,
+    }, ch);
+  }
+
   function route() {
+    const vMatch = location.hash.match(/^#\/(?:visualise|cosmos)(?:\/(\d+))?$/);
+    if (vMatch) {
+      if (viewIsGrid) gridScrollY = window.scrollY;
+      else if (currentChapter != null) chapterScrollY[currentChapter] = window.scrollY;
+      viewIsGrid = false;
+      currentChapter = null;
+      const initCh = vMatch[1] ? parseInt(vMatch[1], 10) : null;
+      launchVisualiser(initCh);
+      return;
+    }
+
+    if (window.QuranVisualiser) {
+      window.QuranVisualiser.unmount();
+      visHooks = null;
+    }
+
     const m = location.hash.match(/^#\/ch\/(\d+)$/);
     if (m) {
       if (viewIsGrid) gridScrollY = window.scrollY;

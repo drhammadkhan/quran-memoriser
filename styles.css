@@ -1070,3 +1070,359 @@ body.show-translit .verse.masked .verse-tl { display: none; }
   .ar-mask-hint { font-size: 25px; line-height: 1.95; }
   .ar-mask-label { font-size: 10px; }
 }
+
+/* ---------- 3D Cosmos Visualiser (#/visualise) ---------- */
+
+.cosmos-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - 148px);
+  min-height: 580px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 38%, #151c2e 0%, #0a0d17 58%, #05070c 100%);
+  border: 1px solid rgba(217, 160, 94, 0.28);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45), inset 0 0 80px rgba(217, 160, 94, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #f3e9cf;
+}
+
+.cosmos-wrap.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  z-index: 100;
+  border-radius: 0;
+  border: none;
+}
+
+.cosmos-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+.cosmos-canvas:active {
+  cursor: grabbing;
+}
+
+.cosmos-hud-top,
+.cosmos-hud-bottom {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.cosmos-hud-top {
+  padding: 12px 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cosmos-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(11, 15, 26, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(217, 160, 94, 0.24);
+  border-radius: 12px;
+  padding: 7px 11px;
+  pointer-events: auto;
+}
+
+.cosmos-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cosmos-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(217, 160, 94, 0.28);
+  color: #dcd1b8;
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+  text-decoration: none;
+}
+
+.cosmos-btn:hover {
+  background: rgba(217, 160, 94, 0.18);
+  border-color: rgba(217, 160, 94, 0.65);
+  color: #fff;
+}
+
+.cosmos-btn.active {
+  background: linear-gradient(135deg, #d9822b 0%, #b85d19 100%);
+  border-color: #f3b66f;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(217, 130, 43, 0.45);
+}
+
+.cosmos-btn.emerald-active {
+  background: linear-gradient(135deg, #2d8a56 0%, #1e643d 100%);
+  border-color: #6ce09d;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(76, 209, 130, 0.4);
+}
+
+.cosmos-select {
+  background: rgba(18, 24, 38, 0.9);
+  border: 1px solid rgba(217, 160, 94, 0.32);
+  color: #f3e9cf;
+  border-radius: 7px;
+  padding: 4.5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 195px;
+}
+
+.cosmos-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #9e9278;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.cosmos-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.cosmos-hud-bottom {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Telemetry bar */
+.cosmos-telemetry {
+  background: rgba(11, 15, 26, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(217, 160, 94, 0.24);
+  border-radius: 12px;
+  padding: 9px 13px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cosmos-telemetry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.cosmos-telemetry-title {
+  font-weight: 700;
+  color: #f7eed7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cosmos-telemetry-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: #c8bca0;
+}
+
+.cosmos-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cosmos-stat-pill b {
+  color: #fff;
+}
+
+.cosmos-multibar {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+}
+
+.cosmos-multibar-seg {
+  height: 100%;
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Verse / Chapter Inspector Card in 3D */
+.cosmos-inspector {
+  background: rgba(12, 16, 28, 0.84);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(217, 160, 94, 0.38);
+  border-radius: 14px;
+  padding: 12px 15px;
+  pointer-events: auto;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 44dvh;
+  overflow-y: auto;
+}
+
+.cosmos-inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cosmos-inspector-title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.cosmos-inspector-title .en {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cosmos-inspector-title .ar {
+  font-family: "ManzoorNaskh", serif;
+  font-size: 21px;
+  color: #f3c878;
+}
+
+.cosmos-inspector-meta {
+  font-size: 11.5px;
+  color: #b7aa8e;
+}
+
+.cosmos-verse-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(217, 160, 94, 0.16);
+}
+
+.cosmos-verse-ar {
+  font-family: "ManzoorNaskh", serif;
+  font-size: 26px;
+  line-height: 1.9;
+  direction: rtl;
+  text-align: right;
+  color: #fdf6e2;
+  text-shadow: 0 2px 12px rgba(217, 160, 94, 0.22);
+}
+
+.cosmos-verse-tl {
+  font-size: 13px;
+  font-style: italic;
+  color: #d6b87c;
+  line-height: 1.45;
+}
+
+.cosmos-verse-en {
+  font-size: 13.5px;
+  color: #dfd5be;
+  line-height: 1.5;
+}
+
+.cosmos-tooltip {
+  position: absolute;
+  z-index: 12;
+  pointer-events: none;
+  background: rgba(10, 14, 24, 0.92);
+  border: 1px solid rgba(217, 160, 94, 0.5);
+  border-radius: 10px;
+  padding: 8px 11px;
+  color: #f7eed7;
+  font-size: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, calc(-100% - 14px));
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.cosmos-tooltip.visible {
+  opacity: 1;
+}
+
+.cosmos-hint-pill {
+  align-self: center;
+  background: rgba(11, 15, 26, 0.65);
+  border: 1px solid rgba(217, 160, 94, 0.22);
+  color: #c8bca0;
+  font-size: 11.5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 680px) {
+  .cosmos-wrap {
+    height: calc(100dvh - 130px);
+    min-height: 520px;
+    border-radius: 12px;
+  }
+  .cosmos-hud-top { padding: 8px 8px 0; gap: 6px; }
+  .cosmos-hud-bottom { padding: 0 8px 8px; gap: 6px; }
+  .cosmos-bar { padding: 6px 8px; gap: 5px; border-radius: 9px; }
+  .cosmos-btn { padding: 4px 7.5px; font-size: 10.5px; gap: 4px; }
+  .cosmos-select { font-size: 11px; padding: 3.5px 6px; max-width: 145px; }
+  .cosmos-telemetry { padding: 7px 9px; border-radius: 9px; }
+  .cosmos-telemetry-row { font-size: 11px; gap: 6px; }
+  .cosmos-telemetry-stats { gap: 8px; font-size: 10.5px; }
+  .cosmos-inspector { padding: 9px 11px; max-height: 42dvh; border-radius: 10px; gap: 6px; }
+  .cosmos-inspector-title .en { font-size: 15px; }
+  .cosmos-inspector-title .ar { font-size: 18px; }
+  .cosmos-verse-ar { font-size: 22px; line-height: 1.85; }
+  .cosmos-verse-tl { font-size: 12px; }
+  .cosmos-verse-en { font-size: 12.5px; }
+  .cosmos-hint-pill { font-size: 10.5px; padding: 3px 9px; }
+}

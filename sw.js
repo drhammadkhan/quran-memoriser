@@ -17,12 +17,13 @@
  *  - Recitation audio: never intercepted — managed by the in-app
  *    "Offline audio" downloads (separate caches).
  */
-const SHELL = "qm-shell-v16";
+const SHELL = "qm-shell-v17";
 const DATA = "qm-data-v1";
 const CORE = [
   "./",
   "index.html",
   "styles.css",
+  "visualiser.js",
   "app.js",
   "manifest.webmanifest",
   "assets/ManzoorNaskh.ttf",
