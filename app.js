@@ -406,9 +406,10 @@
     write(m) { localStorage.setItem(AUDIO_STATE_KEY, JSON.stringify(m)); },
   };
 
-  function allVerseUrls(reciter) {
+  function allVerseUrls(reciter, onlyLast21 = false) {
     const urls = [];
-    for (const s of surahs) {
+    const list = onlyLast21 ? surahs.filter((s) => s.ch >= 94) : surahs;
+    for (const s of list) {
       for (let v = 1; v <= s.verses; v++) urls.push(audioUrl(s.ch, v, reciter));
     }
     return urls;
@@ -426,17 +427,19 @@
     return { url, objectUrl: false };
   }
 
-  async function startReciterDownload(reciter, rowUpdate) {
+  async function startReciterDownload(reciter, rowUpdate, onlyLast21 = false) {
     if (downloadJobs[reciter]) {
       downloadJobs[reciter].onUpdate = rowUpdate;
+      rowUpdate?.(downloadJobs[reciter], false);
       return;
     }
     if (!surahs.length) return;
     try { await navigator.storage?.persist?.(); } catch {}
-    const urls = allVerseUrls(reciter);
+    const urls = allVerseUrls(reciter, onlyLast21);
     const job = {
       cancelled: false,
       checking: true,
+      onlyLast21,
       done: 0,
       failed: 0,
       bytes: 0,
@@ -446,6 +449,7 @@
     };
     downloadJobs[reciter] = job;
     job.onUpdate?.(job, false);
+    let totalInCache = 0;
     try {
       const cache = await caches.open(cacheName(reciter));
       const existingReqs = await cache.keys();
@@ -463,42 +467,44 @@
         while (!job.cancelled && idx < missing.length) {
           const u = missing[idx++];
           try {
-            const r = await fetch(u);
+            const r = await fetch(u, { mode: "cors" });
             if (!r.ok) throw new Error("HTTP " + r.status);
-            const len = parseInt(r.headers.get("content-length") || "0", 10);
-            if (len > 0) {
-              job.bytes += len;
-              await cache.put(u, r);
-            } else {
-              const blob = await r.clone().blob();
-              job.bytes += blob.size;
-              await cache.put(u, r);
-            }
+            const blob = await r.blob();
+            job.bytes += blob.size;
+            await cache.put(u, new Response(blob, { headers: { "content-type": "audio/mpeg" } }));
             job.done++;
           } catch { job.failed++; }
           job.onUpdate?.(job, false);
         }
       });
       await Promise.all(workers);
+      const finalKeys = await cache.keys();
+      totalInCache = finalKeys.length;
     } finally {
       delete downloadJobs[reciter];
     }
+    const fullTotal = allVerseUrls(reciter, false).length;
     const st = audioState.read();
-    const cached = job.previously + job.done;
+    const cached = totalInCache || (job.previously + job.done);
     const priorBytes = st[reciter]?.bytes || 0;
     st[reciter] = {
-      status: (!job.cancelled && job.failed === 0 && cached === job.total) ? "done" : "partial",
+      status: (!job.cancelled && job.failed === 0 && cached >= fullTotal) ? "done" : (cached > 0 ? "partial" : ""),
       cached,
-      total: job.total,
+      total: fullTotal,
+      last21Done: !job.cancelled && job.failed === 0 && onlyLast21,
       bytes: priorBytes + job.bytes,
     };
+    if (!st[reciter].status) delete st[reciter];
     audioState.write(st);
-    job.onUpdate?.(job, true);
+    job.onUpdate?.(null, true);
   }
 
   function cancelReciterDownload(reciter) {
     const job = downloadJobs[reciter];
-    if (job) job.cancelled = true;
+    if (job) {
+      job.cancelled = true;
+      job.onUpdate?.(job, false);
+    }
   }
 
   async function removeReciterAudio(reciter, rowUpdate) {
@@ -510,14 +516,14 @@
     if (rowUpdate) rowUpdate(null, true);
   }
 
-  const fmtMB = (bytes) => (bytes / (1024 * 1024)).toFixed(0) + " MB";
+  const fmtMB = (bytes) => Math.max(1, Math.round(bytes / (1024 * 1024))) + " MB";
   const fmtPct = (n, d) => (d ? Math.round((n / d) * 100) : 0) + "%";
 
   function renderOfflinePanel() {
     const existing = document.getElementById("offline-panel");
     if (existing) { existing.remove(); return; }
     if (typeof caches === "undefined") {
-      alert("Offline audio needs a secure context — serve the app from http://127.0.0.1 or localhost.");
+      alert("Offline audio needs a secure context (HTTPS or localhost).");
       return;
     }
     const overlay = el("div", "modal-overlay");
@@ -532,15 +538,21 @@
     card.append(
       el("h2", "modal-title", "Offline audio"),
       el("div", "modal-note",
-        "Download a reciter's verse-by-verse audio into this browser (about 1.5 GB each). " +
-        "Downloaded reciters play without an internet connection. Downloads can be cancelled and resumed."),
+        "Save a reciter's verse-by-verse audio to your device so it plays without internet. " +
+        "Choose 'Last 21' (~18 MB, 151 verses) for a fast download, or 'Full Quran' (~1.5 GB, 6,348 verses)."),
       close);
 
     const quotaEl = el("div", "storage-line", "Checking browser storage…");
     card.append(quotaEl);
+
+    overlay.append(card);
+    document.body.append(overlay);
+
     navigator.storage?.estimate?.().then((est) => {
-      if (quotaEl.isConnected) {
-        quotaEl.textContent = `Browser storage: using ${(est.usage / 1073741824).toFixed(2)} GB of ~${(est.quota / 1073741824).toFixed(0)} GB available`;
+      if (quotaEl.isConnected && est?.quota) {
+        quotaEl.textContent = `Device storage: using ${(est.usage / 1073741824).toFixed(2)} GB of ~${(est.quota / 1073741824).toFixed(0)} GB available`;
+      } else {
+        quotaEl.remove();
       }
     }).catch(() => quotaEl.remove());
 
@@ -552,52 +564,85 @@
       const bar = el("div", "progress-track");
       const fill = el("div", "progress-fill");
       bar.append(fill);
-      info.append(title, status);
+      info.append(title, status, bar);
       const actions = el("div", "reciter-actions");
       row.append(info, actions);
       card.append(row);
 
+      let renderedMode = null;
+
       const paint = (job, finished) => {
-        if (!row.isConnected) return;
-        actions.innerHTML = "";
         const st = audioState.read()[id];
-        fill.style.width = "0%";
-        bar.style.display = "none";
-        if (job && !finished) {
+        const isRunning = !!(job && !finished);
+        const modeKey = isRunning
+          ? (job.cancelled ? "cancelling" : "running")
+          : st?.status === "done"
+            ? "done"
+            : st?.status === "partial"
+              ? "partial"
+              : "none";
+
+        if (isRunning) {
           const doneAll = job.previously + job.done;
-          status.textContent = job.checking
-            ? "Checking cached verses…"
-            : `Downloading… ${doneAll.toLocaleString()} / ${job.total.toLocaleString()} (${fmtPct(doneAll, job.total)})${job.failed ? " · " + job.failed + " failed" : ""}`;
+          const scopeLabel = job.onlyLast21 ? "Last 21 chapters" : "Full Quran";
+          status.textContent = job.cancelled
+            ? "Stopping download…"
+            : job.checking
+              ? `Checking cached verses (${scopeLabel})…`
+              : `Downloading ${scopeLabel}… ${doneAll.toLocaleString()} / ${job.total.toLocaleString()} (${fmtPct(doneAll, job.total)})${job.failed ? " · " + job.failed + " failed" : ""}`;
           bar.style.display = "block";
           fill.style.width = fmtPct(doneAll, job.total);
-          const cancelBtn = el("button", "btn btn-stop", "Cancel");
+        } else {
+          bar.style.display = "none";
+          fill.style.width = "0%";
+          if (st?.status === "done") {
+            status.textContent = `✓ All ${st.cached.toLocaleString()} verses saved offline${st.bytes ? " · ~" + fmtMB(st.bytes) : ""}`;
+          } else if (st?.status === "partial") {
+            status.textContent = `${st.last21Done ? "✓ Last 21 chapters saved · " : ""}${st.cached.toLocaleString()} of ${(st.total || 6348).toLocaleString()} verses cached${st.bytes ? " · ~" + fmtMB(st.bytes) : ""}`;
+          } else {
+            status.textContent = "Not downloaded";
+          }
+        }
+
+        // Only rebuild action buttons when state changes so touch taps never get dropped
+        if (renderedMode === modeKey) return;
+        renderedMode = modeKey;
+        actions.innerHTML = "";
+
+        if (modeKey === "running" || modeKey === "cancelling") {
+          const cancelBtn = el("button", "btn btn-stop", modeKey === "cancelling" ? "Stopping…" : "Cancel");
+          cancelBtn.disabled = modeKey === "cancelling";
           cancelBtn.addEventListener("click", () => cancelReciterDownload(id));
           actions.append(cancelBtn);
-        } else if (st?.status === "done") {
-          status.textContent = `✓ Downloaded — ${st.cached.toLocaleString()} verses · ~${fmtMB(st.bytes)}`;
+        } else if (modeKey === "done") {
           const rm = el("button", "btn btn-ghost", "Remove");
           rm.addEventListener("click", () => removeReciterAudio(id, paint));
           actions.append(rm);
-        } else if (st?.status === "partial") {
-          status.textContent = `Partially downloaded — ${st.cached.toLocaleString()} of ${st.total.toLocaleString()} verses · ~${fmtMB(st.bytes)}`;
-          const dl = el("button", "btn btn-play", "Resume");
-          dl.addEventListener("click", () => startReciterDownload(id, paint));
+        } else if (modeKey === "partial") {
+          if (!st?.last21Done) {
+            const dl21 = el("button", "btn btn-play", "⤓ Last 21");
+            dl21.addEventListener("click", () => startReciterDownload(id, paint, true));
+            actions.append(dl21);
+          }
+          const dlAll = el("button", "btn btn-play", "⤓ Full Quran");
+          dlAll.addEventListener("click", () => startReciterDownload(id, paint, false));
           const rm = el("button", "btn btn-ghost", "Remove");
           rm.addEventListener("click", () => removeReciterAudio(id, paint));
-          actions.append(dl, rm);
+          actions.append(dlAll, rm);
         } else {
-          status.textContent = "Not downloaded";
-          const dl = el("button", "btn btn-play", "Download");
-          dl.addEventListener("click", () => startReciterDownload(id, paint));
-          actions.append(dl);
+          const dl21 = el("button", "btn btn-play", "⤓ Last 21");
+          dl21.title = "Download the last 21 chapters (151 verses, ~18 MB)";
+          dl21.addEventListener("click", () => startReciterDownload(id, paint, true));
+          const dlAll = el("button", "btn btn-ghost", "⤓ Full Quran");
+          dlAll.title = "Download all 114 chapters (6,348 verses, ~1.5 GB)";
+          dlAll.addEventListener("click", () => startReciterDownload(id, paint, false));
+          actions.append(dl21, dlAll);
         }
       };
+
       if (downloadJobs[id]) downloadJobs[id].onUpdate = paint;
       paint(downloadJobs[id], false);
     }
-
-    overlay.append(card);
-    document.body.append(overlay);
   }
 
   const el = (tag, cls, html) => {
@@ -1315,7 +1360,7 @@
 
       <section>
         <h2>App version</h2>
-        <p>Build: <b>v1.17</b> (shell: <code>qm-shell-v17</code> · data: <code>qm-data-v1</code>).
+        <p>Build: <b>v1.18</b> (shell: <code>qm-shell-v18</code> · data: <code>qm-data-v1</code>).
         Automatic offline updates are active via <code>data/manifest.json</code>.</p>
       </section>
       <section>
